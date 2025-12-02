@@ -58,6 +58,13 @@ export default function Checkout() {
   const axiosConfig = () =>
     token ? { headers: { Authorization: `Bearer ${token}` } } : {};
 
+// rezorpay
+  useEffect(() => {
+  const script = document.createElement("script");
+  script.src = "https://checkout.razorpay.com/v1/checkout.js";
+  document.body.appendChild(script);
+}, []);
+
   // ------------------ Fetch Cart ------------------
   useEffect(() => {
     async function fetchCart() {
@@ -329,21 +336,49 @@ export default function Checkout() {
   };
   
  
-// continue 
+// paynow
 
-const handleContinue = () => {
-   if (!selectedAddressId) {
-      toast.error("Please select an address");
-      return;
-   }
+const payNow = async () => {
+  if (!selectedAddressId) {
+    toast.error("Please select address!");
+    return;
+  }
 
-   navigate("/payment", {
-      state: {
-         addressId: selectedAddressId
-      }
-   });
+  try {
+    const res = await axios.post(
+      "http://localhost:5000/api/payment/create-order",
+      { amount: totalPayable }
+    );
+
+    const order = res.data.order;
+    const key = res.data.key;
+
+    const options = {
+      key,
+      amount: order.amount,
+      currency: "INR",
+      name: "Food App",
+      description: "Food Order Payment",
+      order_id: order.id,
+
+      handler: async function (response) {
+        const verify = await axios.post(
+          "http://localhost:5000/api/payment/verify",
+          response
+        );
+
+        if (verify.data.success) toast.success("Payment Successful!");
+        else toast.error("Payment Failed!");
+      },
+    };
+
+    const rzp = new window.Razorpay(options);
+    rzp.open();
+  } catch (error) {
+    console.error(error);
+    toast.error("Payment initialization failed!");
+  }
 };
-
 
 
 
@@ -467,12 +502,13 @@ const handleContinue = () => {
             </div>
 
             <div className="flex items-center gap-4">
-  <button
-  onClick={handleContinue}
-  className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl shadow-lg transition-transform transform hover:-translate-y-1"
+<button
+  onClick={payNow}
+  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl mt-4 text-lg"
 >
-  Continue
+  Pay Now
 </button>
+
 
 
               <button

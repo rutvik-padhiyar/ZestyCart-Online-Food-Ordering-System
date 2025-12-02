@@ -36,7 +36,6 @@ import EditFood from "./pages/EditFood";
 import RestaurantManagement from "./pages/admin/ResturentManagement";
 import EditRestaurant from "./pages/EditRestaurant";
 import CheckoutPage from "./pages/Checkout.jsx";
-import Payment from "./pages/Payment.jsx";
 
 
 
@@ -87,7 +86,7 @@ function App() {
                <Route path="/admin/restaurants" element={<RestaurantManagement />} />
                <Route path="/admin/edit-restaurant/:id" element={<EditRestaurant />} />
                <Route path="/checkout" element={<CheckoutPage />} />
-               <Route path="/payment" element={<Payment/>}/>
+               
 
                
                 

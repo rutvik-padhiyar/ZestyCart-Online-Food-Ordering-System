@@ -31,3 +31,7 @@ code {
     font-size: 28px;
     color: #000;
 }
+
+.razorpay-backdrop span {
+    display: none !important;
+}
