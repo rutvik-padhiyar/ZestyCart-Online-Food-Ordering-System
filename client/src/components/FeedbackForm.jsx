@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import axios from "axios";
 
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:5000";
+
 const stars = [1, 2, 3, 4, 5];
 
 const FeedbackForm = ({ onSubmitSuccess, onCancel }) => {
@@ -19,7 +21,7 @@ const FeedbackForm = ({ onSubmitSuccess, onCancel }) => {
     setLoading(true);
     try {
       await axios.post(
-        "http://localhost:5000/api/feedback",
+        `${BACKEND_URL}/api/feedback`,
         { rating, comment },
         { headers: { Authorization: `Bearer ${token}` } }
       );

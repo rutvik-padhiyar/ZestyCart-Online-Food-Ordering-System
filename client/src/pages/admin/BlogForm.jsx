@@ -3,6 +3,8 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
 
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:5000";
+
 export default function BlogForm() {
   const { id } = useParams(); // edit mode
   const navigate = useNavigate();
@@ -25,7 +27,7 @@ export default function BlogForm() {
     if (!id) return;
     const load = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/blogs/${id}`);
+        const res = await axios.get(`${BACKEND_URL}/api/blogs/${id}`);
         const b = res.data.blog;
         setForm({
           title: b.title,
@@ -74,14 +76,14 @@ export default function BlogForm() {
       }
 
       if (id) {
-        await axios.put(`http://localhost:5000/api/blogs/${id}`, data, {
+        await axios.put(`${BACKEND_URL}/api/blogs/${id}`, data, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "multipart/form-data",
           },
         });
       } else {
-        await axios.post("http://localhost:5000/api/blogs", data, {
+        await axios.post(`${BACKEND_URL}/api/blogs`, data, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "multipart/form-data",

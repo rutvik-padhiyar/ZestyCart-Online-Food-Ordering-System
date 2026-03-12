@@ -50,7 +50,9 @@ const addRestaurant = async (req, res) => {
 // ✅ Get all restaurants
 const getAllRestaurants = async (req, res) => {
   try {
-    const list = await Restaurant.find().limit(500);
+    const list = await Restaurant.find({ isBlocked: { $ne: true } })
+      .sort({ createdAt: -1 })
+      .limit(500);
     return res.json(list);
   } catch (err) {
     console.error("getAllRestaurants error:", err);
@@ -97,16 +99,18 @@ const deleteRestaurant = async (req, res) => {
 // ✅ Block / Unblock restaurant
 const blockRestaurant = async (req, res) => {
   try {
-    const restaurant = await Restaurant.findById(req.params.id);
+    const restaurant = await Restaurant.findById(req.params.id).select("isBlocked");
     if (!restaurant) return res.status(404).json({ message: "Restaurant not found" });
 
-    restaurant.isBlocked = !restaurant.isBlocked;
-    await restaurant.save();
+    const updatedRestaurant = await Restaurant.findByIdAndUpdate(
+      req.params.id,
+      { $set: { isBlocked: !restaurant.isBlocked } },
+      { new: true }
+    );
 
-    // ✅ Send updated restaurant object with response
     return res.json({
-      message: `Restaurant ${restaurant.isBlocked ? "blocked" : "unblocked"}`,
-      restaurant,
+      message: `Restaurant ${updatedRestaurant.isBlocked ? "blocked" : "unblocked"}`,
+      restaurant: updatedRestaurant,
     });
   } catch (err) {
     console.error("blockRestaurant error:", err);
@@ -125,7 +129,7 @@ const getNearbyRestaurants = async (req, res) => {
       ? Number(req.query.radius)
       : 5;
 
-    if (!lat || !lng || Number.isNaN(lat) || Number.isNaN(lng)) {
+    if (Number.isNaN(lat) || Number.isNaN(lng)) {
       return res.status(400).json({ message: "Invalid or missing lat/lng in query" });
     }
 
@@ -138,6 +142,7 @@ const getNearbyRestaurants = async (req, res) => {
           distanceField: "distanceInMeters",
           maxDistance: maxDistanceMeters,
           spherical: true,
+          query: { isBlocked: { $ne: true } },
         },
       },
       {
@@ -148,7 +153,12 @@ const getNearbyRestaurants = async (req, res) => {
       { $sort: { distanceInMeters: 1 } },
     ]);
 
-    return res.json(results);
+    const cleanResults = results.filter((restaurant) => {
+      const coordinates = restaurant.location?.coordinates || [];
+      return !(coordinates[0] === 0 && coordinates[1] === 0);
+    });
+
+    return res.json(cleanResults);
   } catch (err) {
     console.error("getNearbyRestaurants error:", err);
     return res.status(500).json({ message: "Server error", error: err.message });

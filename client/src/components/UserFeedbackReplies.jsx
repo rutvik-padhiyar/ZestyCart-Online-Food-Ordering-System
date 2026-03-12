@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
+
 const UserFeedbackReplies = () => {
   const [feedbacks, setFeedbacks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,7 +13,7 @@ const UserFeedbackReplies = () => {
   useEffect(() => {
     const fetchUserFeedbacks = async () => {
       try {
-        const { data } = await axios.get("http://localhost:5000/api/feedback/user", {
+        const { data } = await axios.get(`${process.env["REACT_APP_BACKEND_URL"] || "http://localhost:5000"}/api/feedback/user`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setFeedbacks(data);

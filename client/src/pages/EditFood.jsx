@@ -3,6 +3,8 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:5000";
+
 export default function EditFood() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -25,7 +27,7 @@ export default function EditFood() {
   useEffect(() => {
     const fetchRestaurants = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/restaurant/all");
+        const res = await axios.get(`${BACKEND_URL}/api/restaurant/all`);
         setRestaurants(res.data);
       } catch (err) {
         console.error(err);
@@ -39,7 +41,7 @@ export default function EditFood() {
     const fetchFood = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get(`http://localhost:5000/api/admin/foods/${id}`, {
+        const res = await axios.get(`${BACKEND_URL}/api/admin/foods/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -83,7 +85,7 @@ export default function EditFood() {
 
     try {
       const token = localStorage.getItem("token");
-      await axios.put(`http://localhost:5000/api/admin/foods/${id}`, data, {
+      await axios.put(`${BACKEND_URL}/api/admin/foods/${id}`, data, {
         headers: {
           "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${token}`,

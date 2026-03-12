@@ -1,31 +1,23 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import { CreditCard, LocateFixed, Truck } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { useNavigate } from "react-router-dom";
+import CheckoutMap from "../components/CheckoutMap";
 
-
-/*
-  Checkout.jsx (3D Card Lift UI)
-  - Add / Edit / Delete addresses (saved on backend)
-  - Fetch addresses on load & after CRUD ops (persistent)
-  - Save uses token from localStorage if available
-  - Subtle 3D hover tilt on address cards
-*/
+const API_BASE = process.env["REACT_APP_BACKEND_URL"] || `${API_BASE}`;
 
 export default function Checkout() {
   const token = localStorage.getItem("token") || null;
   const userId = localStorage.getItem("userId") || "";
+  const navigate = useNavigate();
+  const formRef = useRef(null);
 
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
-
   const [cart, setCart] = useState({ items: [], total: 0 });
-  const [loadingCart, setLoadingCart] = useState(true);
-
   const [emergency, setEmergency] = useState(false);
-  const EMERGENCY_FEE = 12;
-
   const [form, setForm] = useState({
     name: "",
     mobile: "",
@@ -39,195 +31,143 @@ export default function Checkout() {
     latitude: "",
     longitude: "",
   });
-
   const [savingAddress, setSavingAddress] = useState(false);
   const [placingOrder, setPlacingOrder] = useState(false);
-
-  // edit state
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
-  // ref to form container for scroll
-  const formRef = useRef(null);
+  const EMERGENCY_FEE = 12;
 
-  //navigation
-  const navigate = useNavigate();
+  const axiosConfig = () => (token ? { headers: { Authorization: `Bearer ${token}` } } : {});
 
-
-  // axios config helper
-  const axiosConfig = () =>
-    token ? { headers: { Authorization: `Bearer ${token}` } } : {};
-
-// rezorpay
   useEffect(() => {
-  const script = document.createElement("script");
-  script.src = "https://checkout.razorpay.com/v1/checkout.js";
-  document.body.appendChild(script);
-}, []);
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    document.body.appendChild(script);
+  }, []);
 
-  // ------------------ Fetch Cart ------------------
   useEffect(() => {
-    async function fetchCart() {
-      setLoadingCart(true);
-      try {
-        let res;
-        try {
-          res = await axios.get("http://localhost:5000/api/cart", axiosConfig());
-        } catch (err) {
-          if (userId) {
-            res = await axios.get(`http://localhost:5000/api/cart/get/${userId}`, axiosConfig());
-          } else {
-            throw err;
-          }
-        }
-
-        const cartData = res.data.cart || res.data || { items: [] };
-        let total = 0;
-        const items = cartData.items || [];
-        items.forEach((it) => {
-          const price = it.product?.price ?? it.price ?? 0;
-          const qty = it.quantity ?? 1;
-          total += Number(price) * Number(qty);
-        });
-
-        setCart({ items, total });
-      } catch (err) {
-        console.error("Cart fetch error:", err?.response?.data || err.message);
-        setCart({ items: [], total: 0 });
-      } finally {
-        setLoadingCart(false);
-      }
-    }
-
     fetchCart();
-  }, [token, userId]);
-
-  // ------------------ Fetch Saved Addresses ------------------
-  const fetchAddresses = async () => {
-    try {
-      // prefer token-protected list endpoint
-      let res;
-      // Try token-protected "list" (no param) first
-      try {
-        res = await axios.get("http://localhost:5000/api/address/list", axiosConfig());
-      } catch (err) {
-        // fallback to param-based list if backend expects userId in path
-        if (userId) {
-          res = await axios.get(`http://localhost:5000/api/address/list/${userId}`, axiosConfig());
-        } else {
-          throw err;
-        }
-      }
-
-      // backend might return { success, addresses } or array
-      const addresses = res.data?.addresses ?? res.data ?? [];
-      setSavedAddresses(Array.isArray(addresses) ? addresses : []);
-    } catch (err) {
-      console.warn("No saved addresses or address list API failed.", err?.response?.data || err.message);
-      setSavedAddresses([]);
-    }
-  };
-
-  useEffect(() => {
     fetchAddresses();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, userId]);
 
+  const fetchCart = async () => {
+    try {
+      let res;
+      try {
+        res = await axios.get(`${API_BASE}/api/cart`, axiosConfig());
+      } catch (error) {
+        if (userId) {
+          res = await axios.get(`${API_BASE}/api/cart/get/${userId}`, axiosConfig());
+        } else {
+          throw error;
+        }
+      }
 
-  // ------------------ Use My Current Location -> reverse geocode ------------------
+      const cartData = res.data.cart || res.data || { items: [] };
+      const items = cartData.items || [];
+      const total = items.reduce((sum, item) => sum + Number(item.product?.price || item.price || 0) * Number(item.quantity || 1), 0);
+      setCart({ items, total });
+    } catch (error) {
+      setCart({ items: [], total: 0 });
+    }
+  };
+
+  const fetchAddresses = async () => {
+    try {
+      let res;
+      try {
+        res = await axios.get(`${API_BASE}/api/address/list`, axiosConfig());
+      } catch (error) {
+        if (userId) {
+          res = await axios.get(`${API_BASE}/api/address/list/${userId}`, axiosConfig());
+        } else {
+          throw error;
+        }
+      }
+      const addresses = res.data?.addresses ?? res.data ?? [];
+      setSavedAddresses(Array.isArray(addresses) ? addresses : []);
+    } catch (error) {
+      setSavedAddresses([]);
+    }
+  };
+
   const useCurrentLocation = () => {
     if (!navigator.geolocation) {
-      alert("Browser does not support geolocation.");
+      alert("Geolocation not supported");
       return;
     }
 
     navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const lat = position.coords.latitude;
-        const lon = position.coords.longitude;
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setForm((prev) => ({ ...prev, latitude: lat, longitude: lng }));
 
-        try {
-          const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`;
-          const r = await fetch(url);
-          const data = await r.json();
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
+        );
+        const data = await res.json();
+        const a = data.address || {};
+        const fullAddress = [a.attraction, a.building, a.road, a.neighbourhood || a.suburb, a.village || a.town || a.city, a.state, a.postcode]
+          .filter(Boolean)
+          .join(", ");
 
-          setForm((prev) => ({
-            ...prev,
-            latitude: lat,
-            longitude: lon,
-            pincode: data.address?.postcode || prev.pincode,
-            city: data.address?.city || data.address?.town || data.address?.village || prev.city,
-            state: data.address?.state || prev.state,
-            locality: data.address?.suburb || data.address?.neighbourhood || prev.locality,
-            fullAddress: data.display_name || prev.fullAddress,
-          }));
-
-          // scroll into view
-          formRef.current?.scrollIntoView({ behavior: "smooth" });
-        } catch (err) {
-          console.error("Reverse geocode failed:", err);
-          alert("Failed to fetch address from your location.");
-        }
+        setForm((prev) => ({
+          ...prev,
+          fullAddress: fullAddress || data.display_name || "",
+          locality: a.neighbourhood || a.suburb || "",
+          city: a.village || a.town || a.city || "",
+          state: a.state || "",
+          pincode: a.postcode || "",
+        }));
       },
-      (err) => {
-        console.error("Geolocation error:", err);
-        alert("Unable to get your location. Please allow location access.");
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
+      () => alert("Location permission denied"),
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
     );
   };
 
-  // ------------------ Save New Address ------------------
+  const setFormField = (key, value) => setForm((current) => ({ ...current, [key]: value }));
+
+  const emptyForm = () => ({
+    name: "",
+    mobile: "",
+    pincode: "",
+    locality: "",
+    fullAddress: "",
+    city: "",
+    state: "",
+    landmark: "",
+    addressType: "Home",
+    latitude: "",
+    longitude: "",
+  });
+
   const saveAddress = async () => {
-    // basic validation
     if (!form.name || !form.mobile || !form.fullAddress) {
-      toast.warn("Please fill Name, Mobile and Full Address.", { position: "top-center" });
+      toast.warn("Please fill Name, Mobile and Full Address.");
       return;
     }
 
     setSavingAddress(true);
     try {
-      const payload = {
-        ...form,
-        userId: userId || undefined, // backend linking via token if available
-      };
-
-      const res = await axios.post("http://localhost:5000/api/address/add", payload, axiosConfig());
+      const payload = { ...form, userId: userId || undefined };
+      const res = await axios.post(`${API_BASE}/api/address/add`, payload, axiosConfig());
       const saved = res.data?.address || res.data;
-
-      // prefer refetch to ensure canonical data from DB
       await fetchAddresses();
-
-      toast.success("Address saved.", { position: "top-center" });
-
-      // auto-select newly saved address if returned
       if (saved?._id) setSelectedAddressId(saved._id);
-
-      // clear form
-      setForm({
-        name: "",
-        mobile: "",
-        pincode: "",
-        locality: "",
-        fullAddress: "",
-        city: "",
-        state: "",
-        landmark: "",
-        addressType: "Home",
-        latitude: "",
-        longitude: "",
-      });
+      setForm(emptyForm());
       setIsEditing(false);
       setEditingId(null);
-    } catch (err) {
-      console.error("Save address failed:", err?.response?.data || err.message);
-      toast.error("Failed to save address.", { position: "top-center" });
+      toast.success("Address saved.");
+    } catch (error) {
+      toast.error("Failed to save address.");
     } finally {
       setSavingAddress(false);
     }
   };
 
-  // ------------------ Start Edit ------------------
   const startEdit = (addr) => {
     setIsEditing(true);
     setEditingId(addr._id);
@@ -244,74 +184,52 @@ export default function Checkout() {
       latitude: addr.latitude || "",
       longitude: addr.longitude || "",
     });
-
-    // scroll to form
     formRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // ------------------ Update Address ------------------
   const updateAddress = async () => {
     if (!editingId) return;
     if (!form.name || !form.mobile || !form.fullAddress) {
-      toast.warn("Please fill Name, Mobile and Full Address.", { position: "top-center" });
+      toast.warn("Please fill Name, Mobile and Full Address.");
       return;
     }
 
     setSavingAddress(true);
     try {
-      await axios.put(`http://localhost:5000/api/address/update/${editingId}`, form, axiosConfig());
-
+      await axios.put(`${API_BASE}/api/address/update/${editingId}`, form, axiosConfig());
       await fetchAddresses();
-      toast.success("Address updated.", { position: "top-center" });
-
       setIsEditing(false);
       setEditingId(null);
-      setForm({
-        name: "",
-        mobile: "",
-        pincode: "",
-        locality: "",
-        fullAddress: "",
-        city: "",
-        state: "",
-        landmark: "",
-        addressType: "Home",
-        latitude: "",
-        longitude: "",
-      });
-    } catch (err) {
-      console.error("Update address failed:", err?.response?.data || err.message);
-      toast.error("Failed to update address.", { position: "top-center" });
+      setForm(emptyForm());
+      toast.success("Address updated.");
+    } catch (error) {
+      toast.error("Failed to update address.");
     } finally {
       setSavingAddress(false);
     }
   };
 
-  // ------------------ Delete Address ------------------
   const deleteAddress = async (id) => {
-    if (!window.confirm("Delete this address? This cannot be undone.")) return;
+    if (!window.confirm("Delete this address?")) return;
     try {
-      await axios.delete(`http://localhost:5000/api/address/delete/${id}`, axiosConfig());
+      await axios.delete(`${API_BASE}/api/address/delete/${id}`, axiosConfig());
       await fetchAddresses();
       if (selectedAddressId === id) setSelectedAddressId(null);
-      toast.success("Address deleted.", { position: "top-center" });
-    } catch (err) {
-      console.error("Delete address failed:", err?.response?.data || err.message);
-      toast.error("Failed to delete address.", { position: "top-center" });
+      toast.success("Address deleted.");
+    } catch (error) {
+      toast.error("Failed to delete address.");
     }
   };
 
-  // ------------------ Place Order ------------------
   const placeOrder = async () => {
     if (!selectedAddressId) {
-      toast.warn("Please select or save an address before placing the order.", { position: "top-center" });
+      toast.warn("Please select an address before placing the order.");
       return;
     }
 
     setPlacingOrder(true);
     try {
-      const addr = savedAddresses.find((a) => a._id === selectedAddressId);
-
+      const addr = savedAddresses.find((item) => item._id === selectedAddressId);
       const payload = {
         address: addr.fullAddress || "",
         mobile: addr.mobile || form.mobile || "",
@@ -323,344 +241,258 @@ export default function Checkout() {
         emergency: !!emergency,
       };
 
-      await axios.post("http://localhost:5000/api/order/place", payload, axiosConfig());
-
-      toast.success("Order placed successfully! 🎉", { position: "top-center" });
-      // optionally redirect
-    } catch (err) {
-      console.error("Order place error:", err?.response?.data || err.message);
-      toast.error("Failed to place order.", { position: "top-center" });
+      const response = await axios.post(`${API_BASE}/api/order/place`, payload, axiosConfig());
+      toast.success("Order placed successfully.");
+      navigate(`/thank-you/${response.data.order._id}`);
+    } catch (error) {
+      toast.error("Failed to place order.");
     } finally {
       setPlacingOrder(false);
     }
   };
-  
- 
-// paynow
 
-const payNow = async () => {
-  if (!selectedAddressId) {
-    toast.error("Please select address!");
-    return;
-  }
-
-  try {
-    const res = await axios.post(
-      "http://localhost:5000/api/payment/create-order",
-      { amount: totalPayable }
-    );
-
-    const order = res.data.order;
-    const key = res.data.key;
-
-    const options = {
-      key,
-      amount: order.amount,
-      currency: "INR",
-      name: "Food App",
-      description: "Food Order Payment",
-      order_id: order.id,
-
-      handler: async function (response) {
-        const verify = await axios.post(
-          "http://localhost:5000/api/payment/verify",
-          response
-        );
-
-        if (verify.data.success) toast.success("Payment Successful!");
-        else toast.error("Payment Failed!");
-      },
-    };
-
-    const rzp = new window.Razorpay(options);
-    rzp.open();
-  } catch (error) {
-    console.error(error);
-    toast.error("Payment initialization failed!");
-  }
-};
-
-
-
-  // small helper to set form fields
-  const setFormField = (key, value) => setForm((f) => ({ ...f, [key]: value }));
-
-  // 3D tilt helpers: simple mousemove-based transform
-  const handleCardMove = (e) => {
-    const el = e.currentTarget;
-    const rect = el.getBoundingClientRect();
-    const x = e.clientX - rect.left; // x position within the element
-    const y = e.clientY - rect.top; // y position within the element
-    const cx = rect.width / 2;
-    const cy = rect.height / 2;
-    const dx = (x - cx) / cx; // -1 .. 1
-    const dy = (y - cy) / cy; // -1 .. 1
-    const tiltX = dy * 6; // degrees
-    const tiltY = dx * -6;
-    el.style.transform = `perspective(800px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) translateY(-6px)`;
+  const getRazorpayKey = async () => {
+    const res = await axios.get(`${API_BASE}/api/razorpay-key`);
+    return res.data.key;
   };
 
-  const handleCardLeave = (e) => {
-    const el = e.currentTarget;
-    el.style.transform = `perspective(800px) rotateX(0deg) rotateY(0deg) translateY(0px)`;
-  };
-
-  // compute totals
   const foodTotal = cart.total || 0;
   const emergencyCharge = emergency ? EMERGENCY_FEE : 0;
   const totalPayable = foodTotal + emergencyCharge;
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-white via-orange-50 to-white p-6">
-      <ToastContainer />
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl md:text-4xl font-extrabold text-gray-800 mb-6 drop-shadow-sm">
-          Delivery Address
-        </h1>
+  const payNow = async () => {
+    if (!selectedAddressId) {
+      toast.warn("Please select address first");
+      return;
+    }
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* LEFT: Saved addresses + summary */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white rounded-2xl shadow-xl p-6">
-              <h2 className="font-semibold text-lg mb-3">Saved Addresses</h2>
+    try {
+      const addr = savedAddresses.find((item) => item._id === selectedAddressId);
+      if (!addr) {
+        toast.warn("Selected address not found");
+        return;
+      }
+
+      const razorpayKey = await getRazorpayKey();
+      const orderRes = await axios.post(
+        `${API_BASE}/api/payment/create-order`,
+        { amount: totalPayable },
+        axiosConfig()
+      );
+
+      const orderData = orderRes.data.order;
+      const options = {
+        key: razorpayKey,
+        amount: orderData.amount,
+        currency: "INR",
+        name: "Zesto",
+        description: "Food Order Payment",
+        order_id: orderData.id,
+        handler: async function (response) {
+          const verify = await axios.post(`${API_BASE}/api/payment/verify`, response);
+          if (verify.data.success) {
+            const payload = {
+              address: addr.fullAddress || "",
+              mobile: addr.mobile || form.mobile || "",
+              addressId: addr._id,
+              paymentMethod: "Online",
+              location: {
+                lat: Number(addr.latitude || form.latitude || 0),
+                lng: Number(addr.longitude || form.longitude || 0),
+              },
+              emergency: !!emergency,
+            };
+
+            const placedOrder = await axios.post(
+              `${API_BASE}/api/order/place`,
+              payload,
+              axiosConfig()
+            );
+
+            if (placedOrder.data?.order?._id) {
+              navigate(`/thank-you/${placedOrder.data.order._id}`);
+              return;
+            }
+
+            toast.error("Order placed but invoice page could not open.");
+          } else {
+            toast.error("Payment Failed");
+          }
+        },
+        theme: { color: "#10b981" },
+        callback_url: `${API_BASE}/api/payment/verify`,
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (error) {
+      console.error(error);
+      toast.error("Payment failed");
+    }
+  };
+
+  return (
+    <div className="public-shell">
+      <ToastContainer />
+      <div className="public-section pt-24">
+        <section className="public-hero rounded-[36px] px-8 py-10 text-white">
+          <div className="public-pill">Checkout suite</div>
+          <h1 className="mt-6 text-4xl font-semibold tracking-tight lg:text-5xl">Finalize delivery, payment and address details in one premium flow.</h1>
+        </section>
+
+        <div className="mt-8 grid gap-8 xl:grid-cols-[1.3fr_0.9fr]">
+          <div className="space-y-8">
+            <section className="public-card rounded-[32px] p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Saved addresses</p>
+                  <h2 className="mt-2 text-2xl font-semibold text-slate-950">Choose delivery location</h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedAddressId(null);
+                    formRef.current?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  className="public-button public-button-secondary text-sm"
+                >
+                  Add New
+                </button>
+              </div>
 
               {savedAddresses.length === 0 ? (
-                <div className="text-gray-500 py-6">No saved addresses yet. Add one on the right.</div>
+                <div className="mt-6 rounded-[24px] bg-slate-50 px-5 py-6 text-sm text-slate-500">No saved addresses yet. Add one below.</div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {savedAddresses.map((a) => (
-                    <div
-                      key={a._id}
-                      onMouseMove={handleCardMove}
-                      onMouseLeave={handleCardLeave}
-                      className={`relative bg-white rounded-2xl p-4 border transition-shadow duration-300 shadow-md hover:shadow-2xl cursor-pointer`}
-                    >
-                      <label className="flex items-start gap-3">
-                        <input
-                          type="radio"
-                          name="addr"
-                          className="mt-1"
-                          checked={selectedAddressId === a._id}
-                          onChange={() => setSelectedAddressId(a._id)}
-                        />
-
+                <div className="mt-6 grid gap-4 md:grid-cols-2">
+                  {savedAddresses.map((address) => (
+                    <label key={address._id} className={`cursor-pointer rounded-[26px] border p-5 transition ${selectedAddressId === address._id ? "border-emerald-400 bg-emerald-50" : "border-slate-200 bg-white"}`}>
+                      <div className="flex items-start gap-3">
+                        <input type="radio" name="address" checked={selectedAddressId === address._id} onChange={() => setSelectedAddressId(address._id)} className="mt-1" />
                         <div className="flex-1">
-                          <div className="flex justify-between items-start">
+                          <div className="flex items-center justify-between">
                             <div>
-                              <div className="font-medium text-gray-800">{a.name || "Unknown"}</div>
-                              <div className="text-sm text-gray-600">{a.mobile}</div>
+                              <p className="text-lg font-semibold text-slate-950">{address.name}</p>
+                              <p className="text-sm text-slate-500">{address.mobile}</p>
                             </div>
-
-                            <div className="text-sm text-gray-500">{a.addressType || "Home"}</div>
+                            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                              {address.addressType || "Home"}
+                            </span>
                           </div>
-
-                          <div className="mt-2 text-gray-700">{a.fullAddress}</div>
-                          <div className="mt-2 text-sm text-gray-500">
-                            {a.locality} • {a.city} • {a.pincode}
-                          </div>
-
-                          <div className="mt-3 flex gap-3">
-                            <button
-                              onClick={() => startEdit(a)}
-                              className="text-sm px-3 py-1 rounded-md border border-gray-200 bg-white hover:bg-gray-50"
-                            >
+                          <p className="mt-3 text-sm leading-7 text-slate-600">{address.fullAddress}</p>
+                          <div className="mt-4 flex gap-2">
+                            <button type="button" onClick={() => startEdit(address)} className="rounded-2xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700">
                               Edit
                             </button>
-                            <button
-                              onClick={() => deleteAddress(a._id)}
-                              className="text-sm px-3 py-1 rounded-md border border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
-                            >
+                            <button type="button" onClick={() => deleteAddress(address._id)} className="rounded-2xl bg-rose-50 px-4 py-2 text-sm font-medium text-rose-600">
                               Delete
                             </button>
                           </div>
                         </div>
-                      </label>
-                    </div>
+                      </div>
+                    </label>
                   ))}
                 </div>
               )}
-            </div>
+            </section>
 
-            {/* Price summary + Emergency */}
-            <div className="bg-white rounded-2xl shadow-xl p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div>
-                <label className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    checked={emergency}
-                    onChange={() => setEmergency(!emergency)}
-                  />
-                  <span className="text-gray-700">Add Emergency Delivery (₹{EMERGENCY_FEE} extra)</span>
-                </label>
-              </div>
-
-              <div className="text-right">
-                <div className="text-sm text-gray-600">Food Total: <span className="font-semibold">₹{foodTotal}</span></div>
-                <div className="text-sm text-gray-600">Emergency: <span className="font-semibold">₹{emergencyCharge}</span></div>
-                <div className="mt-2 text-xl font-bold text-green-700">Total Payable: ₹{totalPayable}</div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-<button
-  onClick={payNow}
-  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl mt-4 text-lg"
->
-  Pay Now
-</button>
-
-
-
-              <button
-                onClick={() => {
-                  setSelectedAddressId(null);
-                  formRef.current?.scrollIntoView({ behavior: "smooth" });
-                }}
-                className="bg-white border border-gray-300 px-4 py-2 rounded-xl text-gray-700"
-              >
-                Add / Edit Address
-              </button>
-            </div>
-          </div>
-
-          {/* RIGHT: Add new address form */}
-          <div className="bg-white rounded-2xl shadow-xl p-6" id="address-form" ref={formRef}>
-            <h2 className="font-semibold text-lg mb-3">{isEditing ? "Edit Address" : "Add New Address"}</h2>
-
-            <button
-              onClick={useCurrentLocation}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md mb-4 inline-flex items-center gap-2"
-            >
-              📍 Use My Current Location
-            </button>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <input
-                className="border p-2 rounded"
-                placeholder="Name"
-                value={form.name}
-                onChange={(e) => setFormField("name", e.target.value)}
-              />
-              <input
-                className="border p-2 rounded"
-                placeholder="Mobile"
-                value={form.mobile}
-                onChange={(e) => setFormField("mobile", e.target.value)}
-              />
-              <input
-                className="border p-2 rounded"
-                placeholder="Pincode"
-                value={form.pincode}
-                onChange={(e) => setFormField("pincode", e.target.value)}
-              />
-              <input
-                className="border p-2 rounded"
-                placeholder="Locality"
-                value={form.locality}
-                onChange={(e) => setFormField("locality", e.target.value)}
-              />
-              <textarea
-                className="border p-2 rounded sm:col-span-2"
-                placeholder="Full Address"
-                value={form.fullAddress}
-                onChange={(e) => setFormField("fullAddress", e.target.value)}
-              />
-              <input
-                className="border p-2 rounded"
-                placeholder="City / District"
-                value={form.city}
-                onChange={(e) => setFormField("city", e.target.value)}
-              />
-              <input
-                className="border p-2 rounded"
-                placeholder="State"
-                value={form.state}
-                onChange={(e) => setFormField("state", e.target.value)}
-              />
-              <input
-                className="border p-2 rounded"
-                placeholder="Landmark (optional)"
-                value={form.landmark}
-                onChange={(e) => setFormField("landmark", e.target.value)}
-              />
-
-              <div className="sm:col-span-2 flex items-center gap-4 mt-2">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="addrType"
-                    checked={form.addressType === "Home"}
-                    onChange={() => setFormField("addressType", "Home")}
-                  />
-                  Home
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="addrType"
-                    checked={form.addressType === "Work"}
-                    onChange={() => setFormField("addressType", "Work")}
-                  />
-                  Work
-                </label>
-              </div>
-            </div>
-
-            <div className="mt-4 flex gap-3">
-              {isEditing ? (
-                <>
-                  <button
-                    onClick={updateAddress}
-                    disabled={savingAddress}
-                    className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-md"
-                  >
-                    {savingAddress ? "Updating..." : "Update Address"}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsEditing(false);
-                      setEditingId(null);
-                      setForm({
-                        name: "",
-                        mobile: "",
-                        pincode: "",
-                        locality: "",
-                        fullAddress: "",
-                        city: "",
-                        state: "",
-                        landmark: "",
-                        addressType: "Home",
-                        latitude: "",
-                        longitude: "",
-                      });
-                    }}
-                    className="bg-white border border-gray-300 px-4 py-2 rounded-md"
-                  >
-                    Cancel
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={saveAddress}
-                  disabled={savingAddress}
-                  className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-md"
-                >
-                  {savingAddress ? "Saving..." : "Save Address"}
+            <section ref={formRef} className="public-card rounded-[32px] p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Address form</p>
+                  <h2 className="mt-2 text-2xl font-semibold text-slate-950">{isEditing ? "Edit Address" : "Add Address"}</h2>
+                </div>
+                <button type="button" onClick={useCurrentLocation} className="public-button public-button-primary text-sm">
+                  <LocateFixed size={16} />
+                  Use Current Location
                 </button>
-              )}
-            </div>
-          </div>
-        </div>
+              </div>
 
-        {/* small notice */}
-        <div className="text-sm text-gray-500 mt-6">
-          Tip: Use the "Use My Current Location" button on mobile for best accuracy.
+              <div className="mt-6 overflow-hidden rounded-[26px] border border-slate-200">
+                <CheckoutMap lat={form.latitude} lng={form.longitude} />
+              </div>
+
+              <div className="mt-6 grid gap-4 md:grid-cols-2">
+                <input className="public-input" placeholder="Name" value={form.name} onChange={(e) => setFormField("name", e.target.value)} />
+                <input className="public-input" placeholder="Mobile" value={form.mobile} onChange={(e) => setFormField("mobile", e.target.value)} />
+                <input className="public-input" placeholder="Pincode" value={form.pincode} onChange={(e) => setFormField("pincode", e.target.value)} />
+                <input className="public-input" placeholder="Locality" value={form.locality} onChange={(e) => setFormField("locality", e.target.value)} />
+                <textarea className="public-input md:col-span-2 min-h-[110px]" placeholder="Full Address" value={form.fullAddress} onChange={(e) => setFormField("fullAddress", e.target.value)} />
+                <input className="public-input" placeholder="City" value={form.city} onChange={(e) => setFormField("city", e.target.value)} />
+                <input className="public-input" placeholder="State" value={form.state} onChange={(e) => setFormField("state", e.target.value)} />
+                <input className="public-input md:col-span-2" placeholder="Landmark" value={form.landmark} onChange={(e) => setFormField("landmark", e.target.value)} />
+              </div>
+
+              <div className="mt-5 flex gap-5">
+                {["Home", "Work"].map((type) => (
+                  <label key={type} className="flex items-center gap-2 text-sm text-slate-700">
+                    <input type="radio" checked={form.addressType === type} onChange={() => setFormField("addressType", type)} />
+                    {type}
+                  </label>
+                ))}
+              </div>
+
+              <div className="mt-6 flex flex-wrap gap-3">
+                {isEditing ? (
+                  <>
+                    <button type="button" disabled={savingAddress} onClick={updateAddress} className="public-button public-button-primary">
+                      {savingAddress ? "Updating..." : "Update Address"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditing(false);
+                        setEditingId(null);
+                        setForm(emptyForm());
+                      }}
+                      className="public-button public-button-secondary"
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <button type="button" disabled={savingAddress} onClick={saveAddress} className="public-button public-button-primary">
+                    {savingAddress ? "Saving..." : "Save Address"}
+                  </button>
+                )}
+              </div>
+            </section>
+          </div>
+
+          <aside className="space-y-8">
+            <section className="public-card rounded-[32px] p-6">
+              <div className="rounded-[26px] bg-slate-950 px-5 py-5 text-white">
+                <p className="text-lg font-semibold">Order Summary</p>
+                <div className="mt-5 space-y-3 text-sm text-slate-300">
+                  <div className="flex justify-between"><span>Items</span><span>{cart.items.length}</span></div>
+                  <div className="flex justify-between"><span>Food Total</span><span>Rs {foodTotal}</span></div>
+                  <div className="flex justify-between"><span>Emergency</span><span>Rs {emergencyCharge}</span></div>
+                  <div className="border-t border-white/10 pt-3 text-xl font-semibold text-emerald-300">Total Rs {totalPayable}</div>
+                </div>
+              </div>
+
+              <label className="mt-5 flex items-center gap-3 text-sm text-slate-700">
+                <input type="checkbox" checked={emergency} onChange={() => setEmergency(!emergency)} />
+                Add emergency delivery (Rs {EMERGENCY_FEE})
+              </label>
+
+              <div className="mt-6 grid gap-3">
+                <button type="button" onClick={payNow} className="public-button public-button-primary w-full">
+                  <CreditCard size={16} />
+                  Pay Now
+                </button>
+                <button type="button" disabled={placingOrder} onClick={placeOrder} className="public-button public-button-secondary w-full bg-slate-950 text-white">
+                  <Truck size={16} />
+                  {placingOrder ? "Placing Order..." : "Cash on Delivery"}
+                </button>
+              </div>
+            </section>
+
+            <section className="public-glass rounded-[32px] px-6 py-6 text-sm leading-7 text-slate-300">
+              Tip: current location use karoge to delivery accuracy better milegi.
+            </section>
+          </aside>
         </div>
       </div>
     </div>
   );
 }
-
-/* Uses Tailwind classes — if you are not using Tailwind, replace with your CSS.
-   3D tilt effect is applied inline on mouse move (handleCardMove/handleCardLeave).
-*/

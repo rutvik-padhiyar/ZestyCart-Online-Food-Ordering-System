@@ -1,225 +1,178 @@
-// src/pages/CartPage.jsx
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import { useNavigate } from "react-router-dom";
+import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
-const CartPage = () => {
+const API_BASE = process.env["REACT_APP_BACKEND_URL"] || `${API_BASE}`;
+
+export default function CartPage() {
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [placingOrder, setPlacingOrder] = useState(false);
-
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchCart();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchCart = async () => {
     if (token) {
       try {
-        const response = await axios.get("http://localhost:5000/api/cart", {
+        const response = await axios.get(`${API_BASE}/api/cart`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setCart(response.data.cart);
       } catch (error) {
-        console.error("❌ Failed to fetch cart:", error);
+        console.error("Failed to fetch cart:", error);
       } finally {
         setLoading(false);
       }
-    } else {
-      const guestCart = JSON.parse(localStorage.getItem("guestCart")) || [];
-      setCart({ items: guestCart });
-      setLoading(false);
+      return;
     }
+
+    const guestCart = JSON.parse(localStorage.getItem("guestCart")) || [];
+    setCart({ items: guestCart });
+    setLoading(false);
   };
 
   const updateQuantity = async (productId, change) => {
-    if (token) {
-      try {
-        const updatedItems = cart.items.map((item) => {
-          if (item.product._id === productId) {
-            const newQty = Math.max(1, item.quantity + change);
-            return { ...item, quantity: newQty };
-          }
-          return item;
-        });
-        setCart({ ...cart, items: updatedItems });
+    if (!token) return;
 
-        await axios.put(
-          `http://localhost:5000/api/cart/update`,
-          {
-            productId,
-            quantity: updatedItems.find((i) => i.product._id === productId).quantity,
-          },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+    try {
+      const updatedItems = cart.items.map((item) => {
+        if (item.product._id === productId) {
+          return { ...item, quantity: Math.max(1, item.quantity + change) };
+        }
+        return item;
+      });
 
-        window.dispatchEvent(new Event("cartUpdated"));
-      } catch (error) {
-        console.error("❌ Failed to update quantity:", error);
-      }
+      setCart({ ...cart, items: updatedItems });
+
+      await axios.put(
+        `${API_BASE}/api/cart/update`,
+        {
+          productId,
+          quantity: updatedItems.find((item) => item.product._id === productId).quantity,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      window.dispatchEvent(new Event("cartUpdated"));
+    } catch (error) {
+      console.error("Failed to update quantity:", error);
     }
   };
 
   const removeItem = async (itemId) => {
     try {
-      await axios.delete(`http://localhost:5000/api/cart/item/${itemId}`, {
+      await axios.delete(`${API_BASE}/api/cart/item/${itemId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       fetchCart();
-    } catch (error) {
-      console.error("❌ Failed to remove item:", error.response?.data || error.message);
-    }
-  };
-
-  const placeOrder = async () => {
-    if (!token) {
-      alert("Please login to place your order.");
-      window.location.href = "/login";
-      return;
-    }
-
-    try {
-      setPlacingOrder(true);
-
-      const orderItems = cart.items.map((item) => ({
-        productId: item.product._id,
-        quantity: item.quantity,
-      }));
-
-      const response = await axios.post(
-        "http://localhost:5000/api/order/place",
-        { items: orderItems },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      const order = response.data.order;
-
-      toast.success("Order placed successfully!", {
-        position: "top-center",
-        autoClose: 2000,
-        theme: "colored",
-      });
-
-      // ✅ Redirect to ThankYouPage with orderId
-      setTimeout(() => {
-        navigate(`/thank-you/${order._id}`);
-      }, 2000);
-
       window.dispatchEvent(new Event("cartUpdated"));
-      fetchCart();
     } catch (error) {
-      console.error("❌ Failed to place order:", error);
-      toast.error("Failed to place order. Please try again.", {
-        position: "top-center",
-        autoClose: 4000,
-        theme: "colored",
-      });
-    } finally {
-      setPlacingOrder(false);
+      console.error("Failed to remove item:", error.response?.data || error.message);
     }
   };
 
-  const getTotalPrice = () => {
-    return cart?.items?.reduce(
-      (total, item) => total + item.product.price * item.quantity,
-      0
-    );
-  };
+  const getTotalPrice = () =>
+    cart?.items?.reduce((total, item) => total + Number(item.product?.price || 0) * Number(item.quantity || 0), 0) || 0;
 
   if (loading) {
-    return (
-      <div className="text-center mt-10 text-lg font-medium text-gray-700">
-        Loading your cart...
-      </div>
-    );
+    return <div className="public-shell flex min-h-screen items-center justify-center text-slate-200">Loading your cart...</div>;
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-10">
+    <div className="public-shell">
       <ToastContainer />
+      <div className="public-section pt-24">
+        <section className="public-hero rounded-[36px] px-8 py-10 text-white lg:px-10">
+          <div className="public-pill">Cart review</div>
+          <h1 className="mt-6 text-4xl font-semibold tracking-tight lg:text-5xl">Review your premium food selection before checkout.</h1>
+        </section>
 
-      <h2 className="text-3xl font-bold mb-6 text-center text-gray-800">
-        Your Cart
-      </h2>
+        {!cart?.items?.length ? (
+          <section className="mt-8 public-glass rounded-[32px] px-6 py-12 text-center text-slate-300">
+            Your cart is empty.
+          </section>
+        ) : (
+          <section className="mt-8 grid gap-8 lg:grid-cols-[1.4fr_0.8fr]">
+            <div className="space-y-6">
+              {cart.items.map((item) => (
+                <article key={item._id || item.product?._id} className="public-card rounded-[32px] p-5">
+                  <div className="flex flex-col gap-5 md:flex-row">
+                    <img
+                      src={`${API_BASE}/uploads/${item.product?.image || "placeholder-restaurant.svg"}`}
+                      alt={item.product?.name}
+                      className="h-36 w-full rounded-[24px] object-cover md:w-44"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <h2 className="text-2xl font-semibold text-slate-950">{item.product?.name}</h2>
+                          <p className="mt-2 text-sm text-slate-500">{item.product?.address || "Restaurant item"}</p>
+                        </div>
+                        <button type="button" onClick={() => removeItem(item._id)} className="rounded-2xl bg-rose-50 p-3 text-rose-600">
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
 
-      {cart?.items?.length > 0 ? (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {cart.items.map((item) => (
-              <div
-                key={item._id || item.product._id}
-                className="flex bg-white shadow-md rounded-xl p-4 gap-4 border border-gray-200 relative"
-              >
-                <img
-                  src={`http://localhost:5000/uploads/${item.product.image}`}
-                  alt={item.product.name}
-                  className="w-32 h-24 object-cover rounded-lg"
-                />
-
-                <div className="flex-1">
-                  <h3 className="text-xl font-semibold text-gray-800">
-                    {item.product.name}
-                  </h3>
-                  <p className="text-gray-600">
-                    Price: ₹{item.product.price} x {item.quantity} ={" "}
-                    <strong>₹{item.product.price * item.quantity}</strong>
-                  </p>
-
-                  <div className="flex items-center space-x-2 mt-2">
-                    <button
-                      onClick={() => updateQuantity(item.product._id, -1)}
-                      className="px-2 py-1 bg-gray-200 text-gray-700 text-lg rounded"
-                    >
-                      −
-                    </button>
-                    <span className="px-3">{item.quantity}</span>
-                    <button
-                      onClick={() => updateQuantity(item.product._id, 1)}
-                      className="px-2 py-1 bg-green-200 text-green-700 text-lg rounded"
-                    >
-                      +
-                    </button>
+                      <div className="mt-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                        <div className="flex items-center gap-3">
+                          <button type="button" onClick={() => updateQuantity(item.product._id, -1)} className="rounded-2xl border border-slate-200 bg-white p-3">
+                            <Minus size={16} />
+                          </button>
+                          <span className="min-w-[42px] text-center text-lg font-semibold text-slate-950">{item.quantity}</span>
+                          <button type="button" onClick={() => updateQuantity(item.product._id, 1)} className="rounded-2xl border border-slate-200 bg-white p-3">
+                            <Plus size={16} />
+                          </button>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-slate-500">Item total</p>
+                          <p className="mt-1 text-2xl font-semibold text-emerald-700">
+                            Rs {(item.product?.price || 0) * item.quantity}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
+                </article>
+              ))}
+            </div>
 
-                  <p className="text-gray-600 mt-2">Restaurant: {item.product.address}</p>
-                  <p className="text-gray-600">⭐ {item.product.rating}</p>
-                  <p className="text-gray-600">Delivery: {item.product.deliveryTime} min</p>
+            <aside className="public-card rounded-[32px] p-6">
+              <div className="rounded-[26px] bg-slate-950 px-5 py-5 text-white">
+                <div className="flex items-center gap-3">
+                  <ShoppingBag size={18} />
+                  <p className="text-lg font-semibold">Order Summary</p>
                 </div>
-
-                <button
-                  onClick={() => removeItem(item._id)}
-                  className="absolute top-3 right-3 text-red-500 hover:text-red-700 text-lg"
-                  title="Remove item"
-                >
-                  🗑
-                </button>
+                <div className="mt-6 flex items-center justify-between text-sm text-slate-300">
+                  <span>Items</span>
+                  <span>{cart.items.length}</span>
+                </div>
+                <div className="mt-3 flex items-center justify-between text-sm text-slate-300">
+                  <span>Subtotal</span>
+                  <span>Rs {getTotalPrice()}</span>
+                </div>
+                <div className="mt-4 border-t border-white/10 pt-4 text-2xl font-semibold text-emerald-300">
+                  Total Rs {getTotalPrice()}
+                </div>
               </div>
-            ))}
-          </div>
 
-          <div className="mt-6 text-right text-xl font-bold text-gray-800">
-            Total: ₹{getTotalPrice()}
-          </div>
-
-          <div className="mt-6 text-center">
-           <button
-  onClick={() => navigate("/checkout")}
-  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg text-lg font-medium transition duration-200"
->
-  Proceed to Checkout
-</button>
-
-          </div>
-        </>
-      ) : (
-        <p className="text-center text-gray-500 text-lg">Your cart is empty.</p>
-      )}
+              <button
+                type="button"
+                onClick={() => navigate("/checkout")}
+                className="public-button public-button-primary mt-6 w-full"
+              >
+                Proceed to Checkout
+              </button>
+            </aside>
+          </section>
+        )}
+      </div>
     </div>
   );
-};
-
-export default CartPage;
+}

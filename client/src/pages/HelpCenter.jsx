@@ -1,127 +1,76 @@
-// 📄 src/pages/HelpCenter.jsx
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { Headset, MessageCircleMore } from "lucide-react";
 
-const LOGO_URL = "/images/fav.png";
- // public folder me rakho
+const API_BASE = process.env["REACT_APP_BACKEND_URL"] || `${API_BASE}`;
 
 export default function HelpCenter() {
   const [supportInfo, setSupportInfo] = useState({ phone: "", appName: "" });
   const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
 
-  // Backend se support phone & app name la rahe hain
   useEffect(() => {
-    axios
-      .get("http://localhost:5000/api/user/support-info")
-      .then((res) => {
-        setSupportInfo(res.data);
-      })
-      .catch((err) => {
-        console.error("❌ Failed to fetch support info:", err);
-      });
+    axios.get(`${API_BASE}/api/user/support-info`).then((res) => setSupportInfo(res.data)).catch(() => {});
   }, []);
 
-  // User profile fetch (optional: taaki name/email message me aaye)
   useEffect(() => {
     const fetchProfile = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
       try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          setLoading(false);
-          return;
-        }
-        const res = await axios.get("http://localhost:5000/api/user/profile", {
+        const res = await axios.get(`${API_BASE}/api/user/profile`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setProfile(res.data);
-      } catch (err) {
-        console.warn("Profile fetch failed:", err?.message || err);
-      } finally {
-        setLoading(false);
-      }
+      } catch (error) {}
     };
     fetchProfile();
-  }, []); 
+  }, []);
 
-  // Message text bana rahe hain
-  const buildMessage = () => {
-    const parts = [`Hi, I need help with ${supportInfo.appName}.`];
-    if (profile?.name) parts.push(`My name is ${profile.name}.`);
-    if (profile?.email) parts.push(`Email: ${profile.email}.`);
-    return encodeURIComponent(parts.join(" "));
-  };
-
-  // WhatsApp link
-  const whatsappUrl = `https://wa.me/${supportInfo.phone}?text=${buildMessage()}`;
+  const message = encodeURIComponent(
+    [`Hi, I need help with ${supportInfo.appName || "Zesto"}.`, profile?.name ? `My name is ${profile.name}.` : "", profile?.email ? `Email: ${profile.email}.` : ""]
+      .filter(Boolean)
+      .join(" ")
+  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center p-6">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6">
-        <div className="flex flex-col items-center">
-          {/* Logo circle */}
-          <div className="w-36 h-36 rounded-full p-[4px] bg-gradient-to-tr from-green-400 via-teal-500 to-indigo-600">
-            <div className="bg-white w-full h-full rounded-full flex items-center justify-center overflow-hidden relative">
-              <img
-                src={LOGO_URL}
-                alt={`${supportInfo.appName} logo`}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.style.display = "none";
-                }}
-              />
-              {!LOGO_URL && (
-                <div className="absolute w-36 h-36 rounded-full flex items-center justify-center">
-                  <span className="text-4xl font-bold text-white">
-                    {supportInfo.appName?.charAt(0)}
-                  </span>
-                </div>
-              )}
+    <div className="public-shell">
+      <div className="public-section flex min-h-[calc(100vh-120px)] items-center justify-center pt-24">
+        <div className="grid w-full max-w-5xl gap-8 lg:grid-cols-[1fr_0.95fr]">
+          <section className="public-hero rounded-[36px] px-8 py-10 text-white">
+            <div className="public-pill">Priority support</div>
+            <h1 className="mt-6 text-4xl font-semibold tracking-tight lg:text-5xl">Need help? Start a premium support chat in one tap.</h1>
+            <div className="mt-8 space-y-4">
+              <SupportNote text="Fast WhatsApp-based help flow for customers." />
+              <SupportNote text="Profile information can be attached for quicker issue resolution." />
             </div>
-          </div>
+          </section>
 
-          <h1 className="mt-6 text-2xl font-semibold text-gray-800">
-            {supportInfo.appName || "Loading..."}
-          </h1>
-
-          <p className="mt-2 text-sm text-gray-500 text-center">
-            Need help? Chat with our support on WhatsApp.
-          </p>
-
-          {supportInfo.phone ? (
-            <a
-              href={whatsappUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-6 inline-block w-56 text-center bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-3 rounded-full shadow-md transition"
-            >
-              Continue to Chat
-            </a>
-          ) : (
-            <p className="mt-6 text-gray-400">Loading support details...</p>
-          )}
-
-          <p className="mt-6 text-xs text-gray-400 text-center">
-            Don&apos;t have WhatsApp yet?{" "}
-            <a
-              href="https://www.whatsapp.com/download/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-500 underline"
-            >
-              Download
-            </a>
-          </p>
-
-          {!loading && profile && (
-            <p className="mt-4 text-xs text-gray-500 text-center">
-              We will include your name <strong>{profile.name}</strong> and email{" "}
-              <strong>{profile.email}</strong> in the message to speed things up.
-            </p>
-          )}
+          <section className="public-card rounded-[36px] p-8 text-center">
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+              <Headset size={34} />
+            </div>
+            <h2 className="mt-6 text-3xl font-semibold text-slate-950">{supportInfo.appName || "Zesto Help"}</h2>
+            <p className="mt-4 text-sm leading-7 text-slate-600">Need help? Chat with our support team on WhatsApp.</p>
+            {supportInfo.phone ? (
+              <a
+                href={`https://wa.me/${supportInfo.phone}?text=${message}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="public-button public-button-primary mt-8 w-full"
+              >
+                <MessageCircleMore size={16} />
+                Continue to Chat
+              </a>
+            ) : (
+              <p className="mt-8 text-sm text-slate-500">Loading support details...</p>
+            )}
+          </section>
         </div>
       </div>
     </div>
   );
+}
+
+function SupportNote({ text }) {
+  return <div className="rounded-[24px] border border-white/10 bg-white/5 px-5 py-4 text-sm leading-7 text-emerald-100/75">{text}</div>;
 }

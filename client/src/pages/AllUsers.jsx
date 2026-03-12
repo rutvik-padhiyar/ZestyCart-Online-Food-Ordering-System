@@ -1,6 +1,10 @@
-// AllUsers.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import { Shield, Trash2, UserRound } from "lucide-react";
+import SidebarLayout from "../layouts/SidebarLayout";
+import "../styles/admin.css";
+
+const BACKEND_URL = process.env["REACT_APP_BACKEND_URL"] || `${BACKEND_URL}`;
 
 export default function AllUsers() {
   const [users, setUsers] = useState([]);
@@ -8,103 +12,152 @@ export default function AllUsers() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-
-    axios
-      .get("http://localhost:5000/api/admin/users", {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((res) => {
-        setUsers(res.data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error(err);
-        setError("Failed to fetch users. Make sure you are logged in.");
-        setLoading(false);
-      });
+    fetchUsers();
   }, []);
 
-  const handleDelete = (id) => {
+  const fetchUsers = async () => {
     const token = localStorage.getItem("token");
-    axios
-      .delete(`http://localhost:5000/api/admin/users/${id}`, {
+    try {
+      setLoading(true);
+      const res = await axios.get(`${BACKEND_URL}/api/admin/users`, {
         headers: { Authorization: `Bearer ${token}` },
-      })
-      .then(() => setUsers(users.filter((u) => u._id !== id)))
-      .catch((err) => console.error(err));
+      });
+      setUsers(res.data || []);
+      setError("");
+    } catch (err) {
+      console.error(err);
+      setError("Failed to fetch users. Make sure you are logged in.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  if (loading) return <p className="text-white text-xl">Loading users...</p>;
-  if (error) return <p className="text-red-500">{error}</p>;
+  const handleDelete = async (id) => {
+    const token = localStorage.getItem("token");
+    try {
+      await axios.delete(`${BACKEND_URL}/api/admin/users/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUsers((current) => current.filter((user) => user._id !== id));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const summary = useMemo(() => {
+    const customers = users.filter((user) => user.role === "user").length;
+    const admins = users.filter((user) => user.role === "admin").length;
+    const blocked = users.filter((user) => user.isBlocked).length;
+    return { customers, admins, blocked };
+  }, [users]);
 
   return (
-    <div className="relative min-h-screen p-8 bg-gradient-to-r from-indigo-900 via-purple-900 to-pink-900 overflow-hidden">
-      {/* Floating bubbles animation */}
-      <div className="absolute w-6 h-6 bg-blue-400 rounded-full animate-bubble top-10 left-20 opacity-70"></div>
-      <div className="absolute w-8 h-8 bg-pink-400 rounded-full animate-bubble top-40 left-80 opacity-60"></div>
-      <div className="absolute w-5 h-5 bg-yellow-400 rounded-full animate-bubble top-64 left-60 opacity-50"></div>
-      <div className="absolute w-7 h-7 bg-green-400 rounded-full animate-bubble top-20 left-96 opacity-70"></div>
+    <SidebarLayout>
+      <div className="space-y-6">
+        <section className="admin-glass rounded-[32px] px-6 py-6 text-white lg:px-8">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="admin-badge bg-white/10 text-amber-200">User Management</div>
+              <h1 className="mt-4 text-3xl font-semibold tracking-tight lg:text-4xl">
+                Customer and account directory
+              </h1>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
+                Admin CRM style list with role visibility, blocked state aur quick remove actions.
+              </p>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <TopMetric label="Users" value={users.length} />
+              <TopMetric label="Customers" value={summary.customers} />
+              <TopMetric label="Blocked" value={summary.blocked} />
+            </div>
+          </div>
+        </section>
 
-      <h1 className="text-4xl font-extrabold text-center mb-8 text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-yellow-400 animate-text-gradient">
-        👥 All Users
-      </h1>
+        <section className="admin-panel rounded-[30px] overflow-hidden">
+          <div className="border-b border-slate-200 px-6 py-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">
+              Accounts
+            </p>
+            <h2 className="mt-2 text-2xl font-semibold text-slate-950">All users</h2>
+          </div>
 
-      <div className="overflow-x-auto relative z-10">
-        <table className="min-w-full bg-white/10 backdrop-blur-xl rounded-xl shadow-xl text-white">
-          <thead className="bg-gradient-to-r from-purple-700 via-pink-600 to-red-500 uppercase tracking-wider">
-            <tr>
-              <th className="px-6 py-3 text-left">Name</th>
-              <th className="px-6 py-3 text-left">Email</th>
-              <th className="px-6 py-3 text-left">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((user, index) => (
-              <tr
-                key={user._id}
-                className={`transition-transform transform hover:scale-105 ${
-                  index % 2 === 0 ? "bg-white/10" : "bg-white/5"
-                }`}
-              >
-                <td className="px-6 py-3">{user.name}</td>
-                <td className="px-6 py-3">{user.email}</td>
-                <td className="px-6 py-3">
-                  <button
-                    onClick={() => handleDelete(user._id)}
-                    className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg shadow-md transition duration-300 transform hover:scale-110"
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+          {loading ? (
+            <div className="px-6 py-12 text-sm text-slate-500">Loading users...</div>
+          ) : error ? (
+            <div className="px-6 py-12 text-sm text-rose-600">{error}</div>
+          ) : (
+            <div className="overflow-auto">
+              <table className="min-w-full">
+                <thead className="bg-slate-950 text-left text-xs uppercase tracking-[0.2em] text-slate-300">
+                  <tr>
+                    <th className="px-6 py-4">User</th>
+                    <th className="px-6 py-4">Role</th>
+                    <th className="px-6 py-4">Status</th>
+                    <th className="px-6 py-4">Created</th>
+                    <th className="px-6 py-4">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 bg-white">
+                  {users.map((user) => (
+                    <tr key={user._id} className="hover:bg-amber-50/40">
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-3">
+                          <div className="rounded-2xl bg-slate-100 p-3 text-slate-700">
+                            <UserRound size={18} />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-slate-950">{user.name}</p>
+                            <p className="mt-1 text-sm text-slate-500">{user.email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5 text-sm text-slate-700">
+                        <span className="admin-badge bg-slate-100 text-slate-700">
+                          <Shield size={14} />
+                          {user.role || "user"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-5">
+                        <span
+                          className={`admin-badge ${
+                            user.isBlocked
+                              ? "bg-rose-500/10 text-rose-700"
+                              : "bg-emerald-500/10 text-emerald-700"
+                          }`}
+                        >
+                          {user.isBlocked ? "Blocked" : "Active"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-5 text-sm text-slate-600">
+                        {user.createdAt ? new Date(user.createdAt).toLocaleDateString("en-IN") : "-"}
+                      </td>
+                      <td className="px-6 py-5">
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(user._id)}
+                          className="inline-flex items-center gap-2 rounded-2xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white"
+                        >
+                          <Trash2 size={16} />
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
       </div>
+    </SidebarLayout>
+  );
+}
 
-      {/* Tailwind animations */}
-      <style>
-        {`
-          @keyframes bubble {
-            0% { transform: translateY(0) scale(1); opacity: 0.7; }
-            50% { transform: translateY(-40px) scale(1.2); opacity: 0.9; }
-            100% { transform: translateY(-80px) scale(1); opacity: 0.7; }
-          }
-          .animate-bubble {
-            animation: bubble 6s ease-in-out infinite alternate;
-          }
-
-          @keyframes text-gradient {
-            0%, 100% {background-position:0% 50%}
-            50% {background-position:100% 50%}
-          }
-          .animate-text-gradient {
-            background-size: 200% 200%;
-            animation: text-gradient 5s ease infinite;
-          }
-        `}
-      </style>
+function TopMetric({ label, value }) {
+  return (
+    <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
+      <p className="text-xs uppercase tracking-[0.22em] text-slate-400">{label}</p>
+      <p className="mt-2 text-lg font-semibold text-white">{value}</p>
     </div>
   );
 }

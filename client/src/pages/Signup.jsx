@@ -1,6 +1,5 @@
-// Filename: Signup.jsx
-
 import React, { useState } from "react";
+import { LocateFixed, UserPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export default function Signup() {
@@ -9,22 +8,14 @@ export default function Signup() {
     email: "",
     mobile: "",
     password: "",
-    address: "", // NEW FIELD
+    address: "",
     role: "user",
   });
-
   const [loading, setLoading] = useState(false);
-
   const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-  };
-
-  // ⭐ CURRENT LOCATION FETCH FUNCTION
   const fetchLocation = () => {
     setLoading(true);
-
     if (!navigator.geolocation) {
       alert("Geolocation is not supported by your browser");
       setLoading(false);
@@ -34,22 +25,13 @@ export default function Signup() {
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
-
-        // ⭐ Reverse Geocoding (Convert lat-long → Address)
-        const url = `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`;
-
         try {
-          const response = await fetch(url);
+          const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
           const data = await response.json();
-
-          const fullAddress = data.display_name || "Address not found";
-
-          // Set address in input
-          setFormData((prev) => ({ ...prev, address: fullAddress }));
-        } catch (err) {
+          setFormData((prev) => ({ ...prev, address: data.display_name || "Address not found" }));
+        } catch (error) {
           alert("Failed to fetch address");
         }
-
         setLoading(false);
       },
       () => {
@@ -59,93 +41,69 @@ export default function Signup() {
     );
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
+  const handleSubmit = (event) => {
+    event.preventDefault();
     localStorage.setItem("signupData", JSON.stringify(formData));
     navigate(`/verify-email?email=${formData.email}`);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 pt-20">
-      <div className="bg-white p-8 rounded-xl shadow-lg w-96">
-        <h2 className="text-3xl font-bold mb-6 text-center text-blue-600">
-          Create Account
-        </h2>
+    <div className="public-shell">
+      <div className="public-section flex min-h-[calc(100vh-120px)] items-center justify-center pt-20">
+        <div className="grid w-full max-w-6xl gap-8 lg:grid-cols-[0.95fr_1.05fr]">
+          <section className="public-card rounded-[36px] p-8 lg:p-10">
+            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-emerald-600">Create account</p>
+            <h1 className="mt-3 text-3xl font-semibold text-slate-950">Join Zesto</h1>
+            <form onSubmit={handleSubmit} className="mt-8 grid gap-4 md:grid-cols-2">
+              <Input placeholder="Name" value={formData.name} onChange={(value) => setFormData((current) => ({ ...current, name: value }))} />
+              <Input type="email" placeholder="Email" value={formData.email} onChange={(value) => setFormData((current) => ({ ...current, email: value }))} />
+              <Input placeholder="Mobile Number" value={formData.mobile} onChange={(value) => setFormData((current) => ({ ...current, mobile: value }))} />
+              <Input type="password" placeholder="Password" value={formData.password} onChange={(value) => setFormData((current) => ({ ...current, password: value }))} />
+              <div className="md:col-span-2">
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={formData.address}
+                    onChange={(event) => setFormData((current) => ({ ...current, address: event.target.value }))}
+                    placeholder="Address"
+                    className="public-input pr-14"
+                    required
+                  />
+                  <button type="button" onClick={fetchLocation} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-xl bg-emerald-50 p-2 text-emerald-700">
+                    <LocateFixed size={18} />
+                  </button>
+                </div>
+              </div>
+              <div className="md:col-span-2">
+                <button type="submit" className="public-button public-button-primary w-full">
+                  {loading ? "Fetching Location..." : "Continue to Verification"}
+                  <UserPlus size={16} />
+                </button>
+              </div>
+            </form>
+          </section>
 
-        <form onSubmit={handleSubmit}>
-          <input
-            name="name"
-            type="text"
-            placeholder="Name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-            className="w-full p-3 border border-gray-300 rounded-lg mb-4"
-          />
-
-          <input
-            name="email"
-            type="email"
-            placeholder="Email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            className="w-full p-3 border border-gray-300 rounded-lg mb-4"
-          />
-
-          <input
-            name="mobile"
-            type="text"
-            placeholder="Mobile Number"
-            value={formData.mobile}
-            onChange={handleChange}
-            required
-            pattern="[0-9]{10}"
-            title="Enter a valid 10-digit number"
-            className="w-full p-3 border border-gray-300 rounded-lg mb-4"
-          />
-
-          {/* ⭐ Address Input + Icon Button */}
-          <div className="relative mb-4">
-            <input
-              name="address"
-              type="text"
-              placeholder="Address"
-              value={formData.address}
-              onChange={handleChange}
-              required
-              className="w-full p-3 border border-gray-300 rounded-lg"
-            />
-
-            {/* ⭐ LOCATION ICON BUTTON */}
-            <button
-              type="button"
-              onClick={fetchLocation}
-              className="absolute right-3 top-3 text-blue-600"
-            >
-              📍
-            </button>
-          </div>
-
-          <input
-            name="password"
-            type="password"
-            placeholder="Password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-            className="w-full p-3 border border-gray-300 rounded-lg mb-6"
-          />
-
-          <button
-            type="submit"
-            className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-3 rounded-lg font-semibold"
-          >
-            {loading ? "Fetching Location..." : "Sign Up"}
-          </button>
-        </form>
+          <section className="public-hero rounded-[36px] px-8 py-10 text-white lg:px-10">
+            <div className="public-pill">Luxury onboarding</div>
+            <h2 className="mt-6 text-4xl font-semibold tracking-tight lg:text-5xl">
+              Your food profile starts with a cleaner, premium setup.
+            </h2>
+            <div className="mt-8 space-y-4">
+              <LuxuryBullet text="Location-assisted signup for faster checkout." />
+              <LuxuryBullet text="User account ready for orders, tracking and support." />
+              <LuxuryBullet text="Unified experience that matches the new premium admin style." />
+            </div>
+          </section>
+        </div>
       </div>
     </div>
   );
+}
+
+function Input({ type = "text", placeholder, value, onChange }) {
+  return <input type={type} placeholder={placeholder} value={value} onChange={(event) => onChange(event.target.value)} required className="public-input" />;
+}
+
+function LuxuryBullet({ text }) {
+  return <div className="rounded-[24px] border border-white/10 bg-white/5 px-5 py-4 text-sm leading-7 text-emerald-100/75">{text}</div>;
 }

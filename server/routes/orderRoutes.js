@@ -7,6 +7,46 @@ const Cart = require("../models/cartModel");
 const Restaurant = require("../models/restaurantModel");
 const sendOrderEmail = require("../utils/sendOrderEmail");
 
+const parseDateInput = (value, endOfDay = false) => {
+    if (!value) return null;
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        const [year, month, day] = value.split("-").map(Number);
+        return endOfDay
+            ? new Date(year, month - 1, day, 23, 59, 59, 999)
+            : new Date(year, month - 1, day, 0, 0, 0, 0);
+    }
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return null;
+
+    if (endOfDay) parsed.setHours(23, 59, 59, 999);
+    else parsed.setHours(0, 0, 0, 0);
+
+    return parsed;
+};
+
+const buildDateRange = (from, to) => {
+    if (!from && !to) {
+        const start = new Date();
+        start.setHours(0, 0, 0, 0);
+        const end = new Date();
+        end.setHours(23, 59, 59, 999);
+        return { $gte: start, $lte: end };
+    }
+
+    const range = {};
+    if (from) {
+        const start = parseDateInput(from);
+        if (start) range.$gte = start;
+    }
+    if (to) {
+        const end = parseDateInput(to, true);
+        if (end) range.$lte = end;
+    }
+    return range;
+};
+
 
 // ================== 1️⃣ Place Order (LOCATION ADDED) ==================
 router.post("/place", auth, async(req, res) => {
@@ -61,6 +101,7 @@ router.post("/place", auth, async(req, res) => {
             foodItems,
             totalPrice: totalAmount,
             paymentMethod: req.body.paymentMethod || "COD",
+            paymentStatus: req.body.paymentMethod === "Online" ? "paid" : "pending",
             address,
             mobile,
             status: "placed",
@@ -89,6 +130,17 @@ router.post("/place", auth, async(req, res) => {
 
         // ================== CART CLEAR ==================
         await Cart.findOneAndDelete({ user: userId });
+
+        const io = req.app.get("io");
+        if (io) {
+            io.emit("newOrder", {
+                _id: newOrder._id,
+                totalPrice: newOrder.totalPrice,
+                createdAt: newOrder.createdAt,
+                paymentMethod: newOrder.paymentMethod,
+                paymentStatus: newOrder.paymentStatus,
+            });
+        }
 
         res.status(201).json({
             message: "✅ Order placed with live location",
@@ -122,11 +174,49 @@ router.get("/my-orders", auth, async(req, res) => {
 // ================== 3️⃣ Admin - All Orders ==================
 router.get("/all", auth, roleCheck(["admin", "masteradmin", "partner"]), async(req, res) => {
     try {
-        const orders = await Order.find()
+        const { from, to, status, paymentStatus, paymentMethod, search } = req.query;
+        const query = { createdAt: buildDateRange(from, to) };
+
+        if (status) query.status = status;
+        if (paymentStatus) query.paymentStatus = paymentStatus;
+        if (paymentMethod) query.paymentMethod = paymentMethod;
+
+        let orders = await Order.find(query)
             .populate("user", "name email")
             .populate("items.food", "name price")
             .populate("restaurant", "name")
             .sort({ createdAt: -1 });
+        orders = orders.map((order) => {
+            const hasFoodItems = Array.isArray(order.foodItems) && order.foodItems.length > 0;
+            const derivedFoodItems = hasFoodItems
+                ? order.foodItems
+                : (order.items || []).map((item) => ({
+                    name: item.food?.name || "Food Item",
+                    price: item.food?.price || 0,
+                    quantity: item.quantity || 0,
+                }));
+
+            return {
+                ...order.toObject(),
+                foodItems: derivedFoodItems,
+                paymentStatus: order.paymentStatus || (order.paymentMethod === "Online" ? "paid" : "pending"),
+            };
+        });
+
+        if (search) {
+            const needle = search.toLowerCase();
+            orders = orders.filter((order) => {
+                const customerName = order.user?.name?.toLowerCase() || "";
+                const customerEmail = order.user?.email?.toLowerCase() || "";
+                const items = (order.foodItems || [])
+                    .map((item) => item.name?.toLowerCase() || "")
+                    .join(" ");
+
+                return customerName.includes(needle) ||
+                    customerEmail.includes(needle) ||
+                    items.includes(needle);
+            });
+        }
         res.status(200).json({ message: "✅ Orders fetched", orders });
     } catch (err) {
         console.error("❌ Orders fetch error:", err.message);
@@ -168,7 +258,7 @@ router.get("/monthly-sales", auth, roleCheck(["admin"]), async(req, res) => {
     try {
         const orders = await Order.find();
 
-        const months = ["Jan", "Feb", "Feb", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
         const monthlyRevenue = months.map((month, index) => {
             const revenue = orders
@@ -213,6 +303,7 @@ router.patch("/update-status/:id", auth, roleCheck(["admin", "masteradmin", "par
 
         if (req.body.status) order.status = req.body.status;
         if (req.body.paymentMethod) order.paymentMethod = req.body.paymentMethod;
+        if (req.body.paymentStatus) order.paymentStatus = req.body.paymentStatus;
 
         await order.save();
         res.json({ message: "✅ Order update ho gaya", order });

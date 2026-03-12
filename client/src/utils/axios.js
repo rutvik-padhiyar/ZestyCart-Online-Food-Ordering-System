@@ -1,16 +1,17 @@
 import axios from "axios";
 
+const BACKEND_URL = process.env["REACT_APP_BACKEND_URL"] || "http://localhost:5000";
+
 const API = axios.create({
-    baseURL: "http://localhost:5000/api", // backend port 5000 pe chal raha hai
+  baseURL: `${BACKEND_URL}/api`,
 });
 
-// ✅ agar user login hai to token auto add ho jaye
 API.interceptors.request.use((config) => {
-    const token = localStorage.getItem("token"); // login ke baad token store hoga
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
 export default API;

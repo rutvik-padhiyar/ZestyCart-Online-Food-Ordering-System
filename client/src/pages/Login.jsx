@@ -1,18 +1,16 @@
-// 📁 Login.jsx
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { ArrowRight, LockKeyhole, Mail } from "lucide-react";
+
+const BACKEND_URL = process.env["REACT_APP_BACKEND_URL"] || `${BACKEND_URL}`;
 
 export default function Login() {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [successMessage, setSuccessMessage] = useState("");
-  const navigate = useNavigate();
 
-  // ✅ Auto-fill from signup
   useEffect(() => {
     const email = localStorage.getItem("autoLoginEmail");
     const password = localStorage.getItem("autoLoginPassword");
-
     if (email && password) {
       setFormData({ email, password });
       localStorage.removeItem("autoLoginEmail");
@@ -20,85 +18,102 @@ export default function Login() {
     }
   }, []);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/login", formData);
-
-      // ✅ Store JWT token
+      const res = await axios.post(`${BACKEND_URL}/api/auth/login`, formData);
       localStorage.setItem("token", res.data.token);
-
-      // ✅ Fire loginSuccess event to auto-refresh Navbar
+      localStorage.setItem("currentUser", JSON.stringify(res.data.user));
       window.dispatchEvent(new Event("loginSuccess"));
+      setSuccessMessage("Login Successful");
 
-      // ✅ Show success message
-      setSuccessMessage("Login Successful ✅");
-
-      // ✅ Role-based redirect
       setTimeout(() => {
-        if (res.data.user.role === "admin") {
-          navigate("/admin/orders"); // Admin login → dashboard
-        } else {
-          navigate("/"); // Normal user → home page
-        }
-      }, 1000); // 1 second delay for success message
-
-    } catch (err) {
-      alert(err.response?.data?.message || "Login failed");
+        window.location.href = res.data.user.role === "admin" ? "/admin/dashboard" : "/";
+      }, 700);
+    } catch (error) {
+      alert(error.response?.data?.message || "Login failed");
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 pt-20">
-      <div className="bg-white p-8 rounded-xl shadow-lg w-96">
-        <h2 className="text-3xl font-bold mb-6 text-center text-indigo-600">Login to Account</h2>
+    <div className="public-shell">
+      <div className="public-section flex min-h-[calc(100vh-120px)] items-center justify-center pt-20">
+        <div className="grid w-full max-w-6xl gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+          <section className="public-hero rounded-[36px] px-8 py-10 text-white lg:px-10">
+            <div className="public-pill">Welcome back</div>
+            <h1 className="mt-6 text-4xl font-semibold tracking-tight lg:text-6xl">
+              Sign in to continue your premium food experience.
+            </h1>
+            <p className="mt-5 max-w-xl text-base leading-8 text-emerald-100/80">
+              Orders, cart, recommendations aur account tools ek polished flow mein aapke liye ready hain.
+            </p>
+            <div className="mt-10 grid gap-4 sm:grid-cols-2">
+              <LuxuryInfo title="Fast checkout" text="Saved account state ke saath smooth ordering." />
+              <LuxuryInfo title="Live order access" text="Track recent orders and account activity instantly." />
+            </div>
+          </section>
 
-        {/* ✅ Show login success message */}
-        {successMessage && (
-          <div className="text-green-600 text-center font-semibold mb-4">{successMessage}</div>
-        )}
+          <section className="public-card rounded-[36px] p-8 lg:p-10">
+            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-emerald-600">Account access</p>
+            <h2 className="mt-3 text-3xl font-semibold text-slate-950">Login</h2>
+            {successMessage && <div className="mt-4 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">{successMessage}</div>}
 
-        <form onSubmit={handleSubmit}>
-          <input
-            name="email"
-            type="email"
-            placeholder="Email"
-            value={formData.email}
-            onChange={handleChange}
-            className="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-          <input
-            name="password"
-            type="password"
-            placeholder="Password"
-            value={formData.password}
-            onChange={handleChange}
-            className="w-full p-3 border border-gray-300 rounded-lg mb-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
+            <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+              <Field
+                icon={<Mail size={16} />}
+                type="email"
+                placeholder="Email"
+                value={formData.email}
+                onChange={(value) => setFormData((current) => ({ ...current, email: value }))}
+              />
+              <Field
+                icon={<LockKeyhole size={16} />}
+                type="password"
+                placeholder="Password"
+                value={formData.password}
+                onChange={(value) => setFormData((current) => ({ ...current, password: value }))}
+              />
 
-          {/* ✅ Forgot Password link */}
-          <div className="text-right mb-4">
-            <button
-              type="button"
-              onClick={() => navigate("/forgot-password")}
-              className="text-sm text-indigo-500 hover:underline hover:text-indigo-700 transition"
-            >
-              Forgot password?
-            </button>
-          </div>
+              <div className="flex justify-end">
+                <a href="/forgot-password" className="text-sm font-medium text-emerald-700 hover:text-emerald-600">
+                  Forgot password?
+                </a>
+              </div>
 
-          <button
-            type="submit"
-            className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-purple-600 hover:to-indigo-500 text-white py-3 rounded-lg font-semibold transition duration-300"
-          >
-            Login
-          </button>
-        </form>
+              <button type="submit" className="public-button public-button-primary w-full">
+                Continue
+                <ArrowRight size={16} />
+              </button>
+            </form>
+          </section>
+        </div>
       </div>
+    </div>
+  );
+}
+
+function Field({ icon, type, placeholder, value, onChange }) {
+  return (
+    <label className="block">
+      <div className="relative">
+        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">{icon}</span>
+        <input
+          type={type}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+          className="public-input pl-11"
+        />
+      </div>
+    </label>
+  );
+}
+
+function LuxuryInfo({ title, text }) {
+  return (
+    <div className="rounded-[26px] border border-white/10 bg-white/5 px-5 py-5">
+      <h3 className="text-lg font-semibold text-white">{title}</h3>
+      <p className="mt-2 text-sm leading-7 text-emerald-100/70">{text}</p>
     </div>
   );
 }

@@ -1,23 +1,22 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useParams } from "react-router-dom";
-import { toast, ToastContainer } from "react-toastify";
+import { Clock3, ShoppingBag, Sparkles, Star } from "lucide-react";
+import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const RestaurantPage = () => {
+const API_BASE = process.env["REACT_APP_BACKEND_URL"] || `${API_BASE}`;
+
+export default function RestaurantPage() {
   const { id } = useParams();
   const [foods, setFoods] = useState([]);
 
-  // ✅ Fetch all foods for this restaurant
   useEffect(() => {
     const fetchFoods = async () => {
       try {
-        const response = await axios.get(
-          `http://localhost:5000/api/food/restaurant/${id}/foods`
-        );
-        setFoods(response.data);
+        const response = await axios.get(`${API_BASE}/api/food/restaurant/${id}/foods`);
+        setFoods(response.data || []);
       } catch (error) {
-        console.error("❌ Failed to fetch foods:", error);
         toast.error("Could not load foods");
       }
     };
@@ -27,169 +26,83 @@ const RestaurantPage = () => {
 
   const handleAddToCart = async (productId) => {
     const token = localStorage.getItem("token");
-
     if (!token) {
-      toast.warning(
-        "Please login or signup first after to add items to cart and place order.",
-        {
-          position: "top-center",
-          autoClose: 3000,
-          pauseOnHover: true,
-          closeOnClick: true,
-          theme: "colored",
-        }
-      );
+      toast.warning("Please login first to add items to cart.");
       return;
     }
 
     try {
-      const response = await axios.post(
-        "http://localhost:5000/api/cart/add",
+      await axios.post(
+        `${API_BASE}/api/cart/add`,
         { productId, quantity: 1 },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      console.log("Added to cart:", response.data);
-
       window.dispatchEvent(new Event("cartUpdated"));
-
-      toast.success("✅ Product added to cart successfully!", {
-        position: "top-center",
-        autoClose: 2500,
-        theme: "colored",
-      });
+      toast.success("Product added to cart");
     } catch (error) {
-      console.error(
-        "❌ Failed to add to cart:",
-        error.response?.data || error.message
-      );
-      toast.error("❌ Failed to add to cart. Please try again.", {
-        position: "top-center",
-        autoClose: 3000,
-        theme: "colored",
-      });
+      toast.error("Failed to add to cart");
     }
   };
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h2 style={{ fontSize: "28px", marginBottom: "20px", fontWeight: "600" }}>
-        Explore Menu
-      </h2>
+    <div className="public-shell">
+      <div className="public-section pt-24">
+        <section className="public-hero rounded-[36px] px-8 py-10 text-white lg:px-10">
+          <div className="public-pill">
+            <Sparkles size={14} />
+            Signature menu
+          </div>
+          <h1 className="mt-6 text-4xl font-semibold tracking-tight lg:text-5xl">Explore premium dishes from this restaurant.</h1>
+          <p className="mt-4 max-w-3xl text-base leading-8 text-emerald-100/80">
+            Curated food cards, clear pricing aur instant cart actions.
+          </p>
+        </section>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-          gap: "25px",
-        }}
-      >
-        {foods.map((food) => (
-          <div
-            key={food._id}
-            style={{
-              borderRadius: "20px",
-              overflow: "hidden",
-              background: "#fff",
-              boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
-              transition: "transform 0.2s ease-in-out",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-6px)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0px)";
-            }}
-          >
-            <div style={{ position: "relative" }}>
+        <section className="mt-8 grid gap-8 md:grid-cols-2 xl:grid-cols-3">
+          {foods.map((food) => (
+            <article key={food._id} className="public-card overflow-hidden rounded-[32px]">
               <img
-                src={`http://localhost:5000/uploads/${food.image}`}
+                src={`${API_BASE}/uploads/${food.image}`}
                 alt={food.name}
-                style={{
-                  width: "100%",
-                  height: "180px",
-                  objectFit: "cover",
-                  display: "block",
+                className="h-56 w-full object-cover"
+                onError={(event) => {
+                  event.currentTarget.src = `${API_BASE}/uploads/placeholder-restaurant.svg`;
                 }}
               />
-              <div
-                style={{
-                  position: "absolute",
-                  bottom: "0",
-                  left: "0",
-                  right: "0",
-                  background:
-                    "linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent)",
-                  color: "white",
-                  padding: "8px 12px",
-                  fontWeight: "600",
-                  fontSize: "15px",
-                }}
-              >
-                ITEMS AT ₹{food.price}
-              </div>
-            </div>
+              <div className="p-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h2 className="text-2xl font-semibold text-slate-950">{food.name}</h2>
+                    <p className="mt-2 text-sm text-slate-500">{food.category}</p>
+                  </div>
+                  <span className="rounded-full bg-amber-100 px-3 py-2 text-sm font-semibold text-amber-700">
+                    Rs {food.price}
+                  </span>
+                </div>
 
-            <div style={{ padding: "12px 16px" }}>
-              <h4
-                style={{
-                  fontSize: "18px",
-                  marginBottom: "6px",
-                  fontWeight: "600",
-                }}
-              >
-                {food.name}
-              </h4>
-              <p
-                style={{
-                  fontSize: "14px",
-                  marginBottom: "4px",
-                  color: "#2ecc71",
-                  fontWeight: "500",
-                }}
-              >
-                ⭐ {food.rating} • {food.deliveryTime} mins
-              </p>
-              <p
-                style={{
-                  fontSize: "14px",
-                  color: "#555",
-                  marginBottom: "2px",
-                }}
-              >
-                {food.category}
-              </p>
-              <p style={{ fontSize: "13px", color: "#999" }}>{food.address}</p>
+                <div className="mt-5 grid gap-3 text-sm text-slate-600">
+                  <div className="flex items-center gap-2">
+                    <Star size={16} className="text-amber-500" />
+                    {food.rating || 4.5} rating
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock3 size={16} className="text-emerald-600" />
+                    {food.deliveryTime || 30} mins delivery
+                  </div>
+                </div>
 
-              <div style={{ marginTop: "12px", display: "flex", gap: "10px" }}>
-                <button
-                  onClick={() => handleAddToCart(food._id)}
-                  style={{
-                    backgroundColor: "#ff6600",
-                    color: "white",
-                    padding: "10px 20px",
-                    border: "none",
-                    borderRadius: "6px",
-                    cursor: "pointer",
-                    fontWeight: "600",
-                  }}
-                >
+                <p className="mt-4 text-sm leading-7 text-slate-600">{food.description || "Freshly prepared item from our featured menu."}</p>
+
+                <button type="button" onClick={() => handleAddToCart(food._id)} className="public-button public-button-primary mt-6 w-full text-sm">
+                  <ShoppingBag size={16} />
                   Add to Cart
                 </button>
               </div>
-            </div>
-          </div>
-        ))}
+            </article>
+          ))}
+        </section>
       </div>
-
-      {/* Toast container yahan add karna zaruri hai */}
       <ToastContainer />
     </div>
   );
-};
-
-export default RestaurantPage;
+}

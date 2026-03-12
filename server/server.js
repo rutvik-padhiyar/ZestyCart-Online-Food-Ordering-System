@@ -15,20 +15,31 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 
-// Allowed origins
-const allowedOrigins = [
+const rawOrigins = [
+    process.env.CLIENT_URL,
+    process.env.CLIENT_URL_PREVIEW,
     "http://localhost:3000",
     "http://localhost:3001",
     "http://localhost:3002"
-];
+].filter(Boolean);
+
+const allowedOrigins = [...new Set(rawOrigins)];
+
+const corsOptions = {
+    origin(origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+            return;
+        }
+        callback(new Error("Not allowed by CORS"));
+    },
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    credentials: true,
+};
 
 // Setup Socket.IO
 const io = new Server(server, {
-    cors: {
-        origin: allowedOrigins,
-        methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-        credentials: true,
-    },
+    cors: corsOptions,
 });
 
 // Attach IO to app
@@ -44,11 +55,7 @@ io.on("connection", (socket) => {
 
 // Middlewares
 app.use(
-    cors({
-        origin: allowedOrigins,
-        methods: ["GET", "POST", "PUT", "DELETE"],
-        credentials: true,
-    })
+    cors(corsOptions)
 );
 
 app.use(express.json());
@@ -82,6 +89,19 @@ app.use("/api/delivery-auth", deliveryAuthRoutes);
 app.use("/api/restaurant-auth", restaurantAuthRoutes);
 app.use("/api/address", require("./routes/addressRoutes"));
 app.use("/api/payment", paymentRoutes);
+
+app.get("/api/health", (req, res) => {
+    res.status(200).json({ status: "ok" });
+});
+
+
+
+// ✅ Razorpay Key Frontend ko dene ka secure route
+app.get("/api/razorpay-key", (req, res) => {
+    res.json({
+        key: process.env.RAZORPAY_KEY_ID,
+    });
+});
 
 // MongoDB Connection
 mongoose

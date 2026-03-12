@@ -4,6 +4,8 @@ import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { useSearchParams, useNavigate } from "react-router-dom";
 
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:5000";
+
 export default function VerifyEmail() {
   const [searchParams] = useSearchParams();
   const email = searchParams.get("email");
@@ -24,7 +26,7 @@ export default function VerifyEmail() {
 
     const sendOtp = async () => {
       try {
-        await axios.post("http://localhost:5000/api/auth/send-signup-otp", { email });
+        await axios.post(`${BACKEND_URL}/api/auth/send-signup-otp`, { email });
         setMessage("✅ OTP sent to your email.");
         setOtpSent(true);
       } catch (err) {
@@ -39,7 +41,7 @@ export default function VerifyEmail() {
   const handleVerify = async () => {
     setVerifying(true);
     try {
-      await axios.post("http://localhost:5000/api/auth/verify-signup-otp", { email, otp });
+      await axios.post(`${BACKEND_URL}/api/auth/verify-signup-otp`, { email, otp });
 
       //  Get saved signup data
       const savedData = JSON.parse(localStorage.getItem("signupData"));
@@ -51,7 +53,7 @@ export default function VerifyEmail() {
       }
 
       //  Final signup API
-      await axios.post("http://localhost:5000/api/auth/signup", savedData);
+      await axios.post(`${BACKEND_URL}/api/auth/signup`, savedData);
 
       setMessage("🎉 Email verified and signup completed!");
       localStorage.removeItem("signupData");

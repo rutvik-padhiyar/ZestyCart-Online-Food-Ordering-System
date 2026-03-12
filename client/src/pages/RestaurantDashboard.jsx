@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import MonthlyChart from "../components/MonthlyChart";
 
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:5000";
+
 export default function RestaurantDashboard() {
   const [products, setProducts] = useState([]);
   const [formData, setFormData] = useState({
@@ -22,7 +24,7 @@ export default function RestaurantDashboard() {
   }, []);
 
   const fetchProducts = async () => {
-    const res = await axios.get("http://localhost:5000/api/restaurant/products");
+    const res = await axios.get(`${BACKEND_URL}/api/restaurant/products`);
     setProducts(res.data);
   };
 
@@ -47,11 +49,11 @@ export default function RestaurantDashboard() {
 
     try {
       if (editId) {
-        await axios.put(`http://localhost:5000/api/restaurant/products/${editId}`, data, {
+        await axios.put(`${BACKEND_URL}/api/restaurant/products/${editId}`, data, {
           headers: { "Content-Type": "multipart/form-data" },
         });
       } else {
-        await axios.post("http://localhost:5000/api/restaurant/products", data, {
+        await axios.post(`${BACKEND_URL}/api/restaurant/products`, data, {
           headers: { "Content-Type": "multipart/form-data" },
         });
       }
@@ -89,7 +91,7 @@ export default function RestaurantDashboard() {
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this product?")) {
       try {
-        await axios.delete(`http://localhost:5000/api/restaurant/products/${id}`);
+        await axios.delete(`${BACKEND_URL}/api/restaurant/products/${id}`);
         fetchProducts();
       } catch (err) {
         console.error("Delete failed:", err);
@@ -139,7 +141,7 @@ export default function RestaurantDashboard() {
               {/* Image */}
               <div className="relative rounded-xl overflow-hidden">
                 <img
-                  src={`http://localhost:5000/uploads/${p.image}`}
+                  src={`${BACKEND_URL}/uploads/${p.image}`}
                   alt={p.name}
                   className="w-full h-52 object-cover"
                   onError={(e) => (e.target.style.display = "none")}

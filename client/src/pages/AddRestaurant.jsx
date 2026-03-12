@@ -3,6 +3,9 @@ import React, { useState } from "react";
 import axios from "axios";
 import Autosuggest from "react-autosuggest";
 
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:5000";
+
+
 const AddRestaurant = () => {
   const [formData, setFormData] = useState({
     name: "",
@@ -84,7 +87,7 @@ const AddRestaurant = () => {
 
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/restaurant/add",
+        `${BACKEND_URL}/api/restaurant/add`,
         fd
       );
       alert("✅ Restaurant added successfully!");

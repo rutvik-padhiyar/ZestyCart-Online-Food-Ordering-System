@@ -6,9 +6,12 @@
     <link rel="icon" sizes="32x32" href="/images/fav.png" />
 
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta name="description" content="Web site created using create-react-app" />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <meta name="theme-color" content="#05241d" />
+    <meta name="description" content="Zesto luxury food ordering app with premium restaurants, fast checkout and a PWA-ready experience." />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Zesto" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/images/fav.png" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
     <!--
@@ -26,8 +29,41 @@
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
     <title>Zesto App</title>
-    <!-- Tailwind CSS CDN -->
+    <!-- Google font (Inter) and other nice sans families -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS CDN with custom configuration -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#FF4A54', // zomato red
+                        secondary: '#FC8019', // swiggy orange
+                        accent: '#4F46E5', // indigo accent
+                        darkbg: '#1F2937',
+                        'light-gray': '#F3F4F6',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui'],
+                    },
+                    boxShadow: {
+                        card: '0 4px 14px rgba(0,0,0,0.10)',
+                    },
+                },
+            },
+        };
+    </script>
+
+
+
+
+
+
+
 
 </head>
 

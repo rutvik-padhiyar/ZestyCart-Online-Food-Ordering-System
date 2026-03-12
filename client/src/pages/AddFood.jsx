@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:5000";
+
 export default function AddFood() {
   const [formData, setFormData] = useState({
     name: "",
@@ -18,7 +20,7 @@ export default function AddFood() {
   useEffect(() => {
     const fetchRestaurants = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/restaurant/all");
+        const res = await axios.get(`${BACKEND_URL}/api/restaurant/all`);
         setRestaurants(res.data);
       } catch (err) {
         console.error("❌ Failed to load restaurants:", err);
@@ -54,7 +56,7 @@ export default function AddFood() {
     });
 
     try {
-      await axios.post("http://localhost:5000/api/food/add", data, {
+      await axios.post(`${BACKEND_URL}/api/food/add`, data, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 

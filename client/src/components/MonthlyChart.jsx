@@ -14,7 +14,7 @@ import {
 import io from "socket.io-client";
 
 // ✅ Hardcoded backend URL (no env used)
-const BACKEND_URL = "http://localhost:5000";
+const BACKEND_URL = `${BACKEND_URL}`;
 const socket = io(BACKEND_URL);
 
 export default function LiveRevenueChart() {

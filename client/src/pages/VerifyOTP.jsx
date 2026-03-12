@@ -3,6 +3,8 @@ import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:5000";
+
 export default function VerifyOTP() {
   const [otp, setOtp] = useState("");
   const mobile = localStorage.getItem("resetMobile"); // ✅ Mobile get
@@ -15,7 +17,7 @@ export default function VerifyOTP() {
     }
 
     try {
-      await axios.post("http://localhost:5000/api/auth/verify-otp", { mobile, otp });
+      await axios.post(`${BACKEND_URL}/api/auth/verify-otp`, { mobile, otp });
       alert("✅ OTP Verified Successfully!");
       navigate("/reset-password");
     } catch (err) {

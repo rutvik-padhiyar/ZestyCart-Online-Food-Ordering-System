@@ -2,6 +2,7 @@
 import React, { createContext, useState, useEffect } from "react";
 import axios from "axios";
 
+
 export const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
@@ -12,7 +13,7 @@ export const CartProvider = ({ children }) => {
 
     if (token) {
       try {
-        const res = await axios.get("http://localhost:5000/api/cart", {
+        const res = await axios.get(`${process.env["REACT_APP_BACKEND_URL"] || "http://localhost:5000"}/api/cart`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         // ✅ agar cart nahi hai to empty array handle karo

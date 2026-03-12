@@ -1,13 +1,15 @@
 // server/models/restaurant.js
 const mongoose = require("mongoose");
 
+const PLACEHOLDER_IMAGE = "placeholder-restaurant.svg";
+
 const restaurantSchema = new mongoose.Schema({
     name: { type: String, required: true },
     ownerName: { type: String, required: true },
     mobile: { type: String, required: true },
     email: { type: String, required: true },
-    panCardImage: { type: String, required: true },
-    restaurantImage: { type: String, required: true },
+    panCardImage: { type: String, required: true, default: PLACEHOLDER_IMAGE },
+    restaurantImage: { type: String, required: true, default: PLACEHOLDER_IMAGE },
     fssaiLicense: { type: String },
     bankDetails: {
         accountNumber: String,
@@ -25,6 +27,7 @@ const restaurantSchema = new mongoose.Schema({
         coordinates: {
             type: [Number], // [lng, lat]
             required: true,
+            default: [0, 0],
         },
     },
 

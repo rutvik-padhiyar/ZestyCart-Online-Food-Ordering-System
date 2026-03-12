@@ -4,6 +4,7 @@ import axios from "axios";
 import Autosuggest from "react-autosuggest";
 import { useParams, useNavigate } from "react-router-dom";
 
+
 const EditRestaurant = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -35,7 +36,7 @@ const EditRestaurant = () => {
       const token = localStorage.getItem("token");
       try {
         const res = await axios.get(
-          `http://localhost:5000/api/admin/restaurants/${id}`,
+          `${process.env["REACT_APP_BACKEND_URL"] || "http://localhost:5000"}/api/admin/restaurants/${id}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const r = res.data;
@@ -109,7 +110,7 @@ const EditRestaurant = () => {
     try {
       const token = localStorage.getItem("token");
       await axios.put(
-        `http://localhost:5000/api/admin/restaurants/${id}`,
+        `${process.env["REACT_APP_BACKEND_URL"] || "http://localhost:5000"}/api/admin/restaurants/${id}`,
         fd,
         { headers: { Authorization: `Bearer ${token}` } }
       );

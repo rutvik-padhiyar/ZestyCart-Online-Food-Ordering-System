@@ -1,40 +1,22 @@
-// 📁 src/components/Navbar.jsx
-import React, { useEffect, useState, useContext } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useContext, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
+import { Menu, ShoppingBag, UserCircle2, X } from "lucide-react";
 import { CartContext } from "../context/CartContext";
 
 export default function Navbar() {
   const [userRole, setUserRole] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const navigate = useNavigate();
   const { cartCount, fetchCartCount } = useContext(CartContext);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      try {
-        const decoded = jwtDecode(token);
-        setUserRole(decoded.role || "user");
-      } catch (err) {
-        console.error("❌ Invalid token:", err.message);
-        setUserRole(null);
-      }
-    }
-
+    syncSession();
     fetchCartCount();
+
     const handleCartUpdate = () => fetchCartCount();
     const handleLoginSuccess = () => {
+      syncSession();
       fetchCartCount();
-      const token = localStorage.getItem("token");
-      if (token) {
-        try {
-          const decoded = jwtDecode(token);
-          setUserRole(decoded.role || "user");
-        } catch {
-          setUserRole(null);
-        }
-      }
     };
 
     window.addEventListener("cartUpdated", handleCartUpdate);
@@ -44,202 +26,148 @@ export default function Navbar() {
       window.removeEventListener("cartUpdated", handleCartUpdate);
       window.removeEventListener("loginSuccess", handleLoginSuccess);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const syncSession = () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setUserRole(null);
+      return;
+    }
+
+    try {
+      const decoded = jwtDecode(token);
+      setUserRole(decoded.role || "user");
+    } catch (error) {
+      setUserRole(null);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("currentUser");
     setUserRole(null);
-    navigate("/login");
-    window.dispatchEvent(new Event("cartUpdated"));
+    window.dispatchEvent(new Event("loginSuccess"));
+    window.location.href = "/login";
   };
 
-  const handleResetHome = () => {
-    window.dispatchEvent(new Event("resetHome"));
-    setMenuOpen(false);
-  };
+  const navLinks = [
+    { label: "Home", to: "/" },
+    { label: "All Restaurants", to: "/restaurants" },
+    { label: "Blogs", to: "/blogs" },
+    { label: "Help", to: "/help-center" },
+  ];
 
   return (
-    <header className="fixed top-0 left-0 right-0 bg-indigo-600 shadow-md z-50">
-      <div className="max-w-7xl mx-auto flex justify-between items-center px-6 py-4 text-white">
-        {/* Logo */}
-        <Link
-          to="/"
-          onClick={handleResetHome}
-          className="text-2xl font-bold hover:text-yellow-300 transition"
-        >
-          🍕Zesto
+    <header className="fixed inset-x-0 top-0 z-50 px-3 pt-3">
+      <div className="public-glass mx-auto flex max-w-7xl items-center justify-between rounded-[28px] px-5 py-4 text-white lg:px-6">
+        <Link to="/" className="flex items-center gap-3">
+          <div className="rounded-2xl bg-emerald-400/15 px-3 py-2 text-xl">🍕</div>
+          <div>
+            <p className="text-xl font-semibold tracking-tight">Zesto</p>
+            <p className="text-xs uppercase tracking-[0.32em] text-emerald-200/70">
+              Luxury Fooding
+            </p>
+          </div>
         </Link>
 
-        {/* Desktop Navigation */}
-        <nav
-          className={`hidden md:flex items-center space-x-4 ${
-            userRole === "admin" ? "ml-auto" : ""
-          }`}
-        >
-          {/* Home & All Restaurants - Always visible */}
-          <Link to="/" onClick={handleResetHome} className="hover:text-yellow-300">
-            Home
-          </Link>
-          <Link to="/restaurants" className="hover:text-yellow-300">
-            All Restaurants
-          </Link>
+        <nav className="hidden items-center gap-5 lg:flex">
+          {navLinks.map((link) => (
+            <Link key={link.to} to={link.to} className="text-sm font-medium text-slate-200 transition hover:text-white">
+              {link.label}
+            </Link>
+          ))}
+        </nav>
 
-          {/* Admin Options */}
-          {userRole === "admin" && (
-            <>
-              <button
-                onClick={handleLogout}
-                className="bg-red-400 px-3 py-1 rounded-full text-sm font-semibold hover:bg-red-500 text-white"
-              >
-                🚪 Logout
-              </button>
-            </>
+        <div className="hidden items-center gap-3 lg:flex">
+          {userRole !== "admin" && (
+            <Link to="/cart" className="public-button public-button-secondary text-sm">
+              <ShoppingBag size={16} />
+              Cart ({cartCount})
+            </Link>
           )}
 
-          {/* User Options */}
           {userRole === "user" && (
-            <div className="relative group">
-              <button className="flex items-center gap-2 px-4 py-1 bg-green-500 rounded-full text-sm font-semibold hover:bg-green-600">
+            <div className="group relative">
+              <button className="public-button public-button-primary text-sm">
+                <UserCircle2 size={16} />
                 My Account
-                <svg
-                  className="w-3 h-3"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M19 9l-7 7-7-7" />
-                </svg>
               </button>
-              <div className="absolute hidden group-hover:flex flex-col right-0 mt-0 bg-white text-black rounded shadow-xl w-48 z-50 border border-gray-200">
-                <Link
-                  to="/my-orders"
-                  className="px-4 py-2 flex items-center gap-2 hover:bg-green-100 text-gray-800 hover:text-green-600 rounded-md transition"
-                >
-                  📦 My Orders
-                </Link>
-                <Link to="/my-profile" className="px-4 py-2 hover:bg-gray-100 border-b">
-                  👤 My Profile
-                </Link>
-                <Link to="/help-center" className="px-4 py-2 hover:bg-gray-100 border-b">
-                  💬 Help Center
-                </Link>
+              <div className="invisible absolute right-0 top-full mt-3 min-w-[220px] rounded-[22px] border border-white/10 bg-slate-950/95 p-2 opacity-0 shadow-2xl transition-all group-hover:visible group-hover:opacity-100">
+                <NavMenuLink to="/my-orders">My Orders</NavMenuLink>
+                <NavMenuLink to="/my-profile">My Profile</NavMenuLink>
+                <NavMenuLink to="/help-center">Help Center</NavMenuLink>
                 <button
+                  type="button"
                   onClick={handleLogout}
-                  className="text-left px-4 py-2 hover:bg-gray-100 text-red-600"
+                  className="mt-1 w-full rounded-2xl px-4 py-3 text-left text-sm font-medium text-rose-300 transition hover:bg-white/5"
                 >
-                  🚪 Logout
+                  Logout
                 </button>
               </div>
             </div>
           )}
 
-          {/* Guest Options */}
           {!userRole && (
             <>
-              <Link to="/login" className="hover:text-yellow-300">
+              <Link to="/login" className="public-button public-button-secondary text-sm">
                 Login
               </Link>
-              <Link to="/signup" className="hover:text-yellow-300">
-                Signup
-              </Link>
-            </>
-          )}
-        </nav>
-
-        {/* Cart and Track Order - Only for user/guest */}
-        {userRole !== "admin" && (
-          <div className="flex items-center space-x-3">
-            <Link
-              to="/cart"
-              className="bg-yellow-300 text-indigo-800 px-3 py-1 rounded-full text-sm font-semibold hover:bg-yellow-400"
-            >
-              🛒 Cart ({cartCount})
-            </Link>
-            <Link
-              to="/track-order"
-              className="bg-green-300 text-indigo-800 px-3 py-1 rounded-full text-sm font-semibold hover:bg-green-400"
-            >
-              📦 Track Order
-            </Link>
-          </div>
-        )}
-
-        {/* Hamburger Menu for Mobile */}
-        <button
-          className="md:hidden ml-2 focus:outline-none"
-          onClick={() => setMenuOpen(!menuOpen)}
-        >
-          <svg
-            className="w-6 h-6 text-white"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            viewBox="0 0 24 24"
-          >
-            {menuOpen ? (
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-            )}
-          </svg>
-        </button>
-      </div>
-
-      {/* Mobile Menu */}
-      {menuOpen && userRole !== "admin" && (
-        <div className="md:hidden bg-indigo-600 text-white px-6 py-4 border-t border-indigo-500">
-          <Link
-            to="/"
-            onClick={() => {
-              handleResetHome();
-              setMenuOpen(false);
-            }}
-            className="block py-2 hover:text-yellow-300"
-          >
-            Home
-          </Link>
-          <Link to="/restaurants" onClick={() => setMenuOpen(false)} className="block py-2 hover:text-yellow-300">
-            All Restaurants
-          </Link>
-
-          {/* User Options */}
-          {userRole === "user" && (
-            <>
-              <Link to="/my-orders" onClick={() => setMenuOpen(false)} className="block py-2 hover:text-yellow-300">
-                📦 My Orders
-              </Link>
-              <Link to="/my-profile" onClick={() => setMenuOpen(false)} className="block py-2 hover:text-yellow-300">
-                👤 My Profile
-              </Link>
-              <Link to="/help-center" onClick={() => setMenuOpen(false)} className="block py-2 hover:text-yellow-300">
-                💬 Help Center
-              </Link>
-              <button
-                onClick={() => {
-                  handleLogout();
-                  setMenuOpen(false);
-                }}
-                className="w-full text-left py-2 hover:bg-red-500 rounded-md"
-              >
-                🚪 Logout
-              </button>
-            </>
-          )}
-
-          {/* Guest Options */}
-          {!userRole && (
-            <>
-              <Link to="/login" onClick={() => setMenuOpen(false)} className="block py-2 hover:text-yellow-300">
-                Login
-              </Link>
-              <Link to="/signup" onClick={() => setMenuOpen(false)} className="block py-2 hover:text-yellow-300">
-                Signup
+              <Link to="/signup" className="public-button public-button-primary text-sm">
+                Sign Up
               </Link>
             </>
           )}
         </div>
+
+        <button type="button" className="rounded-2xl border border-white/10 p-3 lg:hidden" onClick={() => setMenuOpen((v) => !v)}>
+          {menuOpen ? <X size={18} /> : <Menu size={18} />}
+        </button>
+      </div>
+
+      {menuOpen && (
+        <div className="public-glass mx-auto mt-3 max-w-7xl rounded-[28px] p-4 text-white lg:hidden">
+          <div className="flex flex-col gap-2">
+            {navLinks.map((link) => (
+              <Link key={link.to} to={link.to} onClick={() => setMenuOpen(false)} className="rounded-2xl px-4 py-3 text-sm font-medium hover:bg-white/5">
+                {link.label}
+              </Link>
+            ))}
+            {userRole === "user" && (
+              <>
+                <Link to="/my-orders" onClick={() => setMenuOpen(false)} className="rounded-2xl px-4 py-3 text-sm font-medium hover:bg-white/5">
+                  My Orders
+                </Link>
+                <Link to="/my-profile" onClick={() => setMenuOpen(false)} className="rounded-2xl px-4 py-3 text-sm font-medium hover:bg-white/5">
+                  My Profile
+                </Link>
+                <button type="button" onClick={handleLogout} className="rounded-2xl px-4 py-3 text-left text-sm font-medium text-rose-300 hover:bg-white/5">
+                  Logout
+                </button>
+              </>
+            )}
+            {!userRole && (
+              <>
+                <Link to="/login" onClick={() => setMenuOpen(false)} className="rounded-2xl px-4 py-3 text-sm font-medium hover:bg-white/5">
+                  Login
+                </Link>
+                <Link to="/signup" onClick={() => setMenuOpen(false)} className="rounded-2xl px-4 py-3 text-sm font-medium hover:bg-white/5">
+                  Sign Up
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
       )}
     </header>
+  );
+}
+
+function NavMenuLink({ to, children }) {
+  return (
+    <Link to={to} className="block rounded-2xl px-4 py-3 text-sm font-medium text-slate-200 transition hover:bg-white/5">
+      {children}
+    </Link>
   );
 }

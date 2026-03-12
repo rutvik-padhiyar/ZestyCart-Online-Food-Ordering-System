@@ -1,43 +1,47 @@
-// AdminRestaurants.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
+import { Ban, Pencil, Store, Trash2 } from "lucide-react";
+import SidebarLayout from "../../layouts/SidebarLayout";
+import "../../styles/admin.css";
 
-export default function AdminRestaurants() {
+const BACKEND_URL = process.env["REACT_APP_BACKEND_URL"] || `${BACKEND_URL}`;
+
+export default function RestaurantManagement() {
   const [restaurants, setRestaurants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  const fetchRestaurants = async () => {
-    const token = localStorage.getItem("token");
-    try {
-      const res = await axios.get("http://localhost:5000/api/admin/restaurants", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setRestaurants(res.data);
-      setLoading(false);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to fetch restaurants. Make sure you are logged in.");
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
     fetchRestaurants();
   }, []);
 
+  const fetchRestaurants = async () => {
+    const token = localStorage.getItem("token");
+    try {
+      setLoading(true);
+      const res = await axios.get(`${BACKEND_URL}/api/admin/restaurants`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setRestaurants(res.data || []);
+      setError("");
+    } catch (err) {
+      console.error(err);
+      setError("Failed to fetch restaurants. Make sure you are logged in.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDelete = async (id) => {
     const token = localStorage.getItem("token");
     try {
-      await axios.delete(`http://localhost:5000/api/admin/restaurants/${id}`, {
+      await axios.delete(`${BACKEND_URL}/api/admin/restaurants/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setRestaurants(restaurants.filter((r) => r._id !== id));
-      alert("✅ Restaurant deleted successfully!");
+      setRestaurants((current) => current.filter((restaurant) => restaurant._id !== id));
     } catch (err) {
       console.error(err);
-      alert("❌ Failed to delete restaurant.");
     }
   };
 
@@ -45,99 +49,145 @@ export default function AdminRestaurants() {
     const token = localStorage.getItem("token");
     try {
       const res = await axios.patch(
-        `http://localhost:5000/api/admin/restaurants/block/${id}`,
+        `${BACKEND_URL}/api/admin/restaurants/block/${id}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       const updatedRestaurant = res.data.restaurant;
       setRestaurants((prev) =>
-        prev.map((r) =>
-          r._id === id ? { ...r, isBlocked: updatedRestaurant.isBlocked } : r
+        prev.map((restaurant) =>
+          restaurant._id === id
+            ? { ...restaurant, isBlocked: updatedRestaurant.isBlocked }
+            : restaurant
         )
       );
-
-      alert(res.data.message); // ✅ Show "Restaurant blocked" or "unblocked"
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || "Failed to block/unblock restaurant.");
     }
   };
 
-  if (loading) return <p className="text-white text-center mt-10">Loading restaurants...</p>;
-  if (error) return <p className="text-red-500 text-center mt-10">{error}</p>;
+  const summary = useMemo(() => {
+    const blocked = restaurants.filter((restaurant) => restaurant.isBlocked).length;
+    return { total: restaurants.length, blocked };
+  }, [restaurants]);
 
   return (
-    <div className="min-h-screen p-6 bg-gradient-to-r from-purple-900 via-indigo-900 to-blue-900 animate-gradient-x text-white">
-      <h1 className="text-3xl font-bold mb-6 text-center">🏪 All Restaurants</h1>
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-white/10 backdrop-blur-lg rounded-xl border border-white/20">
-          <thead>
-            <tr className="bg-white/20 text-white">
-              <th className="px-4 py-3">Name</th>
-              <th className="px-4 py-3">Owner</th>
-              <th className="px-4 py-3">Email</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {restaurants.map((r) => (
-              <tr key={r._id} className="hover:bg-white/10 transition-colors">
-                <td className="px-4 py-2">{r.name}</td>
-                <td className="px-4 py-2">{r.ownerName}</td>
-                <td className="px-4 py-2">{r.email}</td>
-                <td className="px-4 py-2">
-                  {r.isBlocked ? (
-                    <span className="bg-red-600 px-2 py-1 rounded-full text-xs">Blocked</span>
-                  ) : (
-                    <span className="bg-green-600 px-2 py-1 rounded-full text-xs">Active</span>
-                  )}
-                </td>
-                <td className="px-4 py-2 flex gap-2">
-                  <Link
-                    to={`/admin/edit-restaurant/${r._id}`}
-                    className="bg-blue-500 px-3 py-1 rounded hover:bg-blue-600 transition-colors"
-                  >
-                    Edit
-                  </Link>
-                  <button
-                    onClick={() => handleDelete(r._id)}
-                    className="bg-red-500 px-3 py-1 rounded hover:bg-red-600 transition-colors"
-                  >
-                    Delete
-                  </button>
-                  <button
-                    onClick={() => handleBlock(r._id)}
-                    className={`px-3 py-1 rounded ${
-                      r.isBlocked
-                        ? "bg-yellow-500 hover:bg-yellow-600"
-                        : "bg-purple-500 hover:bg-purple-600"
-                    } transition-colors`}
-                  >
-                    {r.isBlocked ? "Unblock" : "Block"}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+    <SidebarLayout>
+      <div className="space-y-6">
+        <section className="admin-glass rounded-[32px] px-6 py-6 text-white lg:px-8">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="admin-badge bg-white/10 text-amber-200">Restaurant Network</div>
+              <h1 className="mt-4 text-3xl font-semibold tracking-tight lg:text-4xl">
+                Restaurant operations desk
+              </h1>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
+                Active and blocked restaurants ko premium management view mein handle karo.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Metric label="Restaurants" value={summary.total} />
+              <Metric label="Blocked" value={summary.blocked} />
+            </div>
+          </div>
+        </section>
 
-      {/* Tailwind animation for background */}
-      <style>
-        {`
-          @keyframes gradient-x {
-            0%,100% {background-position: 0% 50%;}
-            50% {background-position: 100% 50%;}
-          }
-          .animate-gradient-x {
-            background-size: 200% 200%;
-            animation: gradient-x 10s ease infinite;
-          }
-        `}
-      </style>
-    </div>
+        <section className="admin-panel rounded-[30px] overflow-hidden">
+          <div className="border-b border-slate-200 px-6 py-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">
+              Restaurant records
+            </p>
+            <h2 className="mt-2 text-2xl font-semibold text-slate-950">All restaurants</h2>
+          </div>
+
+          {loading ? (
+            <div className="px-6 py-12 text-sm text-slate-500">Loading restaurants...</div>
+          ) : error ? (
+            <div className="px-6 py-12 text-sm text-rose-600">{error}</div>
+          ) : (
+            <div className="overflow-auto">
+              <table className="min-w-full">
+                <thead className="bg-slate-950 text-left text-xs uppercase tracking-[0.2em] text-slate-300">
+                  <tr>
+                    <th className="px-6 py-4">Restaurant</th>
+                    <th className="px-6 py-4">Owner</th>
+                    <th className="px-6 py-4">Email</th>
+                    <th className="px-6 py-4">Status</th>
+                    <th className="px-6 py-4">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 bg-white">
+                  {restaurants.map((restaurant) => (
+                    <tr key={restaurant._id} className="hover:bg-amber-50/40">
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-3">
+                          <div className="rounded-2xl bg-slate-100 p-3 text-slate-700">
+                            <Store size={18} />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-slate-950">{restaurant.name}</p>
+                            <p className="mt-1 text-sm text-slate-500">{restaurant.mobile || "No mobile"}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5 text-sm text-slate-700">{restaurant.ownerName || "-"}</td>
+                      <td className="px-6 py-5 text-sm text-slate-700">{restaurant.email || "-"}</td>
+                      <td className="px-6 py-5">
+                        <span
+                          className={`admin-badge ${
+                            restaurant.isBlocked
+                              ? "bg-rose-500/10 text-rose-700"
+                              : "bg-emerald-500/10 text-emerald-700"
+                          }`}
+                        >
+                          {restaurant.isBlocked ? "Blocked" : "Active"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="flex gap-2">
+                          <Link
+                            to={`/admin/edit-restaurant/${restaurant._id}`}
+                            className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white"
+                          >
+                            <Pencil size={16} />
+                            Edit
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(restaurant._id)}
+                            className="inline-flex items-center gap-2 rounded-2xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white"
+                          >
+                            <Trash2 size={16} />
+                            Delete
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleBlock(restaurant._id)}
+                            className="inline-flex items-center gap-2 rounded-2xl bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-950"
+                          >
+                            <Ban size={16} />
+                            {restaurant.isBlocked ? "Unblock" : "Block"}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      </div>
+    </SidebarLayout>
   );
 }
 
+function Metric({ label, value }) {
+  return (
+    <div className="rounded-[22px] border border-white/10 bg-white/5 px-4 py-3">
+      <p className="text-xs uppercase tracking-[0.22em] text-slate-400">{label}</p>
+      <p className="mt-2 text-lg font-semibold text-white">{value}</p>
+    </div>
+  );
+}
