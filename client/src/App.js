@@ -15,6 +15,7 @@ import ResetPassword from "./pages/ResetPassword";
 import AddRestaurant from "./pages/AddRestaurant";
 import RestaurantDashboard from "./pages/RestaurantDashboard";
 import RestaurantPage from "./pages/RestaurantPage";
+import RestaurantDetail from "./pages/RestaurantDetail";
 import CartPage from "./components/CartPage";
 import AllRestaurants from "./pages/AllRestaurants";
 import MyOrders from "./pages/MyOrders";
@@ -37,6 +38,8 @@ import EditRestaurant from "./pages/EditRestaurant";
 import CheckoutPage from "./pages/Checkout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminOrders from "./pages/admin/AdminOrders";
+import AdminDeliveryPartners from "./pages/admin/AdminDeliveryPartners";
+import AppErrorBoundary from "./components/AppErrorBoundary";
 
 function AppContent() {
   const location = useLocation();
@@ -58,6 +61,7 @@ function AppContent() {
           <Route path="/add-restaurant" element={<AddRestaurant />} />
           <Route path="/restaurant-dashboard" element={<RestaurantDashboard />} />
           <Route path="/restaurant/:id" element={<RestaurantPage />} />
+          <Route path="/restaurants/:id/detail" element={<RestaurantDetail />} />
           <Route path="/cart" element={<CartPage />} />
           <Route path="/restaurants" element={<AllRestaurants />} />
           <Route path="/my-orders" element={<MyOrders />} />
@@ -79,6 +83,7 @@ function AppContent() {
           <Route path="/admin/blogs/edit/:id" element={<EditBlog />} />
           <Route path="/admin/users" element={<AllUsers />} />
           <Route path="/admin/foods" element={<AllFoods />} />
+          <Route path="/admin/delivery-partners" element={<AdminDeliveryPartners />} />
           <Route path="/admin/edit-food/:id" element={<EditFood />} />
           <Route path="/admin/restaurants" element={<RestaurantManagement />} />
           <Route path="/admin/edit-restaurant/:id" element={<EditRestaurant />} />
@@ -93,9 +98,11 @@ function AppContent() {
 function App() {
   return (
     <CartProvider>
-      <Router>
-        <AppContent />
-      </Router>
+      <AppErrorBoundary>
+        <Router>
+          <AppContent />
+        </Router>
+      </AppErrorBoundary>
     </CartProvider>
   );
 }

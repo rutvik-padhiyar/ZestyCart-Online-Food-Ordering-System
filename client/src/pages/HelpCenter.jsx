@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Headset, MessageCircleMore } from "lucide-react";
 
-const API_BASE = process.env["REACT_APP_BACKEND_URL"] || `${API_BASE}`;
+const API_BASE = process.env["REACT_APP_BACKEND_URL"] || "http://localhost:5000";
 
 export default function HelpCenter() {
   const [supportInfo, setSupportInfo] = useState({ phone: "", appName: "" });

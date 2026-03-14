@@ -5,7 +5,7 @@ import { BookText, Pencil, Plus, Trash2 } from "lucide-react";
 import SidebarLayout from "../../layouts/SidebarLayout";
 import "../../styles/admin.css";
 
-const BACKEND_URL = process.env["REACT_APP_BACKEND_URL"] || `${BACKEND_URL}`;
+const BACKEND_URL = process.env["REACT_APP_BACKEND_URL"] || "http://localhost:5000";
 
 export default function AdminBlogs() {
   const [blogs, setBlogs] = useState([]);

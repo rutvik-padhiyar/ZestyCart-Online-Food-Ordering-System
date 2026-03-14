@@ -4,8 +4,9 @@ import { useParams } from "react-router-dom";
 import { Clock3, ShoppingBag, Sparkles, Star } from "lucide-react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { resolveMediaUrl } from "../utils/media";
 
-const API_BASE = process.env["REACT_APP_BACKEND_URL"] || `${API_BASE}`;
+const API_BASE = process.env["REACT_APP_BACKEND_URL"] || "http://localhost:5000";
 
 export default function RestaurantPage() {
   const { id } = useParams();
@@ -62,7 +63,7 @@ export default function RestaurantPage() {
           {foods.map((food) => (
             <article key={food._id} className="public-card overflow-hidden rounded-[32px]">
               <img
-                src={`${API_BASE}/uploads/${food.image}`}
+                src={resolveMediaUrl(food.image, API_BASE)}
                 alt={food.name}
                 className="h-56 w-full object-cover"
                 onError={(event) => {

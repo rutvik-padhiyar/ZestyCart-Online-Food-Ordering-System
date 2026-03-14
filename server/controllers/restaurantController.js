@@ -9,6 +9,20 @@ const addRestaurant = async (req, res) => {
       ownerName,
       mobile,
       email,
+      city,
+      state,
+      address,
+      shortDescription,
+      description,
+      cuisines,
+      tags,
+      features,
+      galleryImages,
+      rating,
+      deliveryTime,
+      priceRange,
+      avgCostForTwo,
+      openingHours,
       fssaiLicense,
       accountNumber,
       ifsc,
@@ -31,6 +45,20 @@ const addRestaurant = async (req, res) => {
       ownerName,
       mobile,
       email,
+      city,
+      state,
+      address,
+      shortDescription,
+      description,
+      cuisines: normalizeStringArray(cuisines),
+      tags: normalizeStringArray(tags),
+      features: normalizeStringArray(features),
+      galleryImages: normalizeStringArray(galleryImages),
+      rating: rating ? Number(rating) : undefined,
+      deliveryTime,
+      priceRange,
+      avgCostForTwo: avgCostForTwo ? Number(avgCostForTwo) : undefined,
+      openingHours,
       panCardImage,
       restaurantImage,
       fssaiLicense,
@@ -46,6 +74,15 @@ const addRestaurant = async (req, res) => {
     return res.status(500).json({ message: "Server error", error: err.message });
   }
 };
+
+function normalizeStringArray(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value.filter(Boolean);
+  return String(value)
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
 
 // ✅ Get all restaurants
 const getAllRestaurants = async (req, res) => {

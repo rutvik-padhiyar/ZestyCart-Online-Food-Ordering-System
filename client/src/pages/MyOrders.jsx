@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Clock3, Package2 } from "lucide-react";
 
-const API_BASE = process.env["REACT_APP_BACKEND_URL"] || `${API_BASE}`;
+const API_BASE = process.env["REACT_APP_BACKEND_URL"] || "http://localhost:5000";
 
 export default function MyOrders() {
   const [orders, setOrders] = useState([]);

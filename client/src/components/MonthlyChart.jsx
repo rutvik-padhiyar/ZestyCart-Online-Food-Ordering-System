@@ -13,8 +13,7 @@ import {
 } from "recharts";
 import io from "socket.io-client";
 
-// ✅ Hardcoded backend URL (no env used)
-const BACKEND_URL = `${BACKEND_URL}`;
+const BACKEND_URL = process.env["REACT_APP_BACKEND_URL"] || "http://localhost:5000";
 const socket = io(BACKEND_URL);
 
 export default function LiveRevenueChart() {

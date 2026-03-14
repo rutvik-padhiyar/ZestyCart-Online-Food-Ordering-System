@@ -1,9 +1,16 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
-import { Mail, MapPin, Phone, Search, Star, User } from "lucide-react";
+import { ArrowRight, LoaderCircle, MapPin, Search, Sparkles, Tag } from "lucide-react";
+import { resolveMediaUrl } from "../utils/media";
+import LuxuryEndcap from "../components/LuxuryEndcap";
 
-const API_BASE = process.env["REACT_APP_BACKEND_URL"] || `${API_BASE}`;
+const API_BASE = process.env["REACT_APP_BACKEND_URL"] || "http://localhost:5000";
+const heroOffers = [
+  { title: "Flat 30% Off", subtitle: "Chef-curated premium combos after 7 PM" },
+  { title: "Luxury Dessert Drop", subtitle: "Buy 2 signature desserts, get 1 complimentary" },
+  { title: "VIP Weekend Table", subtitle: "Free delivery on high-value city favourites" },
+];
 
 export default function Home() {
   const [restaurants, setRestaurants] = useState([]);
@@ -12,6 +19,8 @@ export default function Home() {
   const [searchInput, setSearchInput] = useState("");
   const [location, setLocation] = useState({ lat: 24.2586, lng: 72.1907 });
   const [searchError, setSearchError] = useState("");
+  const [detectingLocation, setDetectingLocation] = useState(false);
+  const [offerIndex, setOfferIndex] = useState(0);
 
   useEffect(() => {
     detectUserLocation();
@@ -26,11 +35,19 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setOfferIndex((current) => (current + 1) % heroOffers.length);
+    }, 3200);
+    return () => window.clearInterval(timer);
+  }, []);
+
   const detectUserLocation = () => {
     if (!navigator.geolocation) {
       fetchRestaurants(24.2586, 72.1907);
       return;
     }
+    setDetectingLocation(true);
 
     navigator.geolocation.getCurrentPosition(
       async ({ coords }) => {
@@ -52,13 +69,17 @@ export default function Home() {
           setAddress(city);
         } catch (error) {
           setAddress("Your City");
+        } finally {
+          setDetectingLocation(false);
         }
       },
       () => {
         setLocation({ lat: 24.2586, lng: 72.1907 });
         setAddress("Deesa");
         fetchRestaurants(24.2586, 72.1907);
-      }
+        setDetectingLocation(false);
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   };
 
@@ -115,41 +136,78 @@ export default function Home() {
 
   return (
     <div className="public-shell">
-      <div className="public-section pt-24">
+      <div className="public-section pb-16 pt-24 lg:pb-24">
         <section className="public-hero rounded-[40px] px-8 py-10 text-white lg:px-10 lg:py-12">
-          <div className="public-pill">Luxury discovery</div>
-          <h1 className="mt-6 text-4xl font-semibold tracking-tight lg:max-w-4xl lg:text-6xl">
-            Discover standout restaurants in <span className="text-emerald-300">{address}</span>
-          </h1>
-          <p className="mt-5 max-w-2xl text-base leading-8 text-emerald-100/80">
-            Premium cards, cleaner browsing and a more intentional ordering flow.
-          </p>
+          <div className="grid gap-8 xl:grid-cols-[1.15fr_0.85fr] xl:items-center">
+            <div>
+              <div className="public-pill">Luxury discovery</div>
+              <h1 className="mt-6 text-4xl font-semibold tracking-tight lg:max-w-4xl lg:text-6xl">
+                Discover standout restaurants in <span className="text-emerald-300">{address}</span>
+              </h1>
+              <p className="mt-5 max-w-2xl text-base leading-8 text-emerald-100/80">
+                Premium cards, richer visuals, rotating city offers and a more intentional ordering flow.
+              </p>
 
-          <div className="mt-8 flex flex-col gap-3 md:flex-row">
-            <div className="relative flex-1">
-              <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-emerald-100/70" />
-              <input
-                type="text"
-                value={searchInput}
-                onChange={(event) => setSearchInput(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    handleSearch();
-                  }
-                }}
-                placeholder="Search by restaurant, owner or address"
-                className="w-full rounded-[22px] border border-white/10 bg-white/10 px-12 py-4 text-white placeholder:text-emerald-100/50 outline-none"
-              />
+              <div className="mt-8 flex flex-col gap-3 md:flex-row">
+                <div className="relative flex-1">
+                  <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-emerald-100/70" />
+                  <input
+                    type="text"
+                    value={searchInput}
+                    onChange={(event) => setSearchInput(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        handleSearch();
+                      }
+                    }}
+                    placeholder="Search by restaurant, owner or address"
+                    className="w-full rounded-[22px] border border-white/10 bg-white/10 px-12 py-4 text-white placeholder:text-emerald-100/50 outline-none"
+                  />
+                </div>
+                <button type="button" onClick={handleSearch} className="public-button public-button-primary">
+                  Search
+                </button>
+                <button type="button" onClick={() => detectUserLocation()} className="public-button public-button-secondary min-w-[190px]">
+                  {detectingLocation ? <LoaderCircle size={16} className="animate-spin" /> : null}
+                  Current Location
+                </button>
+              </div>
+              {searchError && <p className="mt-4 text-sm text-amber-200">{searchError}</p>}
             </div>
-            <button type="button" onClick={handleSearch} className="public-button public-button-primary">
-              Search
-            </button>
-            <button type="button" onClick={() => detectUserLocation()} className="public-button public-button-secondary">
-              My Location
-            </button>
+
+            <div className="rounded-[32px] border border-white/10 bg-white/5 p-5 backdrop-blur-xl">
+              <div className="inline-flex items-center gap-2 rounded-full bg-amber-300/15 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-amber-200">
+                <Tag size={14} />
+                Live offers
+              </div>
+              <div className="mt-5 min-h-[210px] rounded-[28px] border border-white/10 bg-[linear-gradient(145deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))] p-5 shadow-2xl">
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-200/80">
+                  Offer {offerIndex + 1}
+                </p>
+                <h3 className="mt-3 text-3xl font-semibold text-white">{heroOffers[offerIndex].title}</h3>
+                <p className="mt-4 max-w-md text-sm leading-7 text-slate-300">
+                  {heroOffers[offerIndex].subtitle}
+                </p>
+                <div className="mt-6 flex flex-wrap gap-3">
+                  {heroOffers.map((offer, index) => (
+                    <button
+                      key={offer.title}
+                      type="button"
+                      onClick={() => setOfferIndex(index)}
+                      className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] transition ${
+                        index === offerIndex
+                          ? "bg-white text-slate-950"
+                          : "border border-white/10 bg-white/5 text-slate-200"
+                      }`}
+                    >
+                      {offer.title}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
-          {searchError && <p className="mt-4 text-sm text-amber-200">{searchError}</p>}
         </section>
 
         <section className="mt-8">
@@ -158,11 +216,11 @@ export default function Home() {
           ) : restaurants.length === 0 ? (
             <div className="public-glass rounded-[30px] px-6 py-10 text-sm text-slate-300">No restaurants match the current search.</div>
           ) : (
-            <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-8 pb-6 md:grid-cols-2 xl:grid-cols-3">
               {restaurants.map((restaurant) => (
-                <article key={restaurant._id} className="public-card overflow-hidden rounded-[32px]">
+                <article key={restaurant._id} className="public-card overflow-hidden rounded-[32px] transition duration-300 hover:-translate-y-1 hover:shadow-[0_28px_80px_rgba(0,0,0,0.22)]">
                   <img
-                    src={`${API_BASE}/uploads/${restaurant.restaurantImage || "placeholder-restaurant.svg"}`}
+                    src={resolveMediaUrl(restaurant.restaurantImage, API_BASE)}
                     alt={restaurant.name}
                     className="h-60 w-full object-cover"
                     onError={(event) => {
@@ -170,38 +228,48 @@ export default function Home() {
                     }}
                   />
                   <div className="p-6">
-                    <div className="flex items-start justify-between gap-4">
-                      <h2 className="text-2xl font-semibold text-slate-950">{restaurant.name}</h2>
+                    <div className="flex items-center justify-between gap-4">
                       <span className="rounded-full bg-amber-100 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-amber-700">
+                        Luxury Pick
+                      </span>
+                      <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                        <Sparkles size={14} />
                         Featured
                       </span>
                     </div>
-                    <div className="mt-5 space-y-3 text-sm text-slate-600">
-                      <Detail icon={<User size={16} />} text={restaurant.ownerName} />
-                      <Detail icon={<Phone size={16} />} text={restaurant.mobile} />
-                      <Detail icon={<Mail size={16} />} text={restaurant.email} />
-                      <Detail icon={<MapPin size={16} />} text={`${restaurant.distanceInKm || 1.0} km away`} />
-                      <Detail icon={<Star size={16} className="text-amber-500" />} text={`${restaurant.rating || 4.6} / 5`} />
+                    <h2 className="mt-5 text-2xl font-semibold text-slate-950">{restaurant.name}</h2>
+                    <div className="mt-3 inline-flex items-center gap-2 text-sm text-slate-600">
+                      <MapPin size={16} className="text-emerald-700" />
+                      <span>{restaurant.city || address}</span>
+                      {restaurant.state ? <span className="text-slate-400">• {restaurant.state}</span> : null}
                     </div>
-                    <Link to={`/restaurant/${restaurant._id}`} className="public-button public-button-primary mt-6 w-full text-sm">
-                      View Foods
-                    </Link>
+
+                    <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                      <Link
+                        to={`/restaurant/${restaurant._id}`}
+                        className="public-button public-button-primary w-full text-sm"
+                      >
+                        View Foods
+                      </Link>
+                      <Link
+                        to={`/restaurants/${restaurant._id}/detail`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="public-button public-button-secondary w-full text-sm text-slate-900"
+                      >
+                        Show More
+                        <ArrowRight size={16} />
+                      </Link>
+                    </div>
                   </div>
                 </article>
               ))}
             </div>
           )}
         </section>
-      </div>
-    </div>
-  );
-}
 
-function Detail({ icon, text }) {
-  return (
-    <div className="flex items-center gap-3">
-      <span className="text-emerald-700">{icon}</span>
-      <span>{text}</span>
+        <LuxuryEndcap />
+      </div>
     </div>
   );
 }

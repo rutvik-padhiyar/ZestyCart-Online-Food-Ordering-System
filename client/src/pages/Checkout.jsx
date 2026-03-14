@@ -6,7 +6,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import CheckoutMap from "../components/CheckoutMap";
 
-const API_BASE = process.env["REACT_APP_BACKEND_URL"] || `${API_BASE}`;
+const API_BASE = process.env["REACT_APP_BACKEND_URL"] || "http://localhost:5000";
 
 export default function Checkout() {
   const token = localStorage.getItem("token") || null;

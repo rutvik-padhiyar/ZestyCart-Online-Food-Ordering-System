@@ -59,9 +59,16 @@ const orderSchema = new mongoose.Schema({
 
     deliveryStatus: {
         type: String,
-        enum: ["pending", "picked", "on-the-way", "delivered"],
+        enum: ["pending", "accepted", "picked", "on-the-way", "delivered", "rejected"],
         default: "pending"
-    }
+    },
+    acceptedAt: Date,
+    pickedAt: Date,
+    outForDeliveryAt: Date,
+    deliveredAt: Date,
+    deliveryConfirmationOtp: { type: String, default: "" },
+    deliveryConfirmationPhoto: { type: String, default: "" },
+    deliveryEarnings: { type: Number, default: 0 },
 
 }, { timestamps: true });
 

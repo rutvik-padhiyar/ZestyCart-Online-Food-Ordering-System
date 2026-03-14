@@ -1,9 +1,6 @@
 import React from "react";
+import Dashboard from "./Dashboard";
 
 export default function Orders() {
-  return (
-    <div className="flex items-center justify-center min-h-screen">
-      <h1 className="text-3xl font-bold">Orders Page (Placeholder)</h1>
-    </div>
-  );
+  return <Dashboard />;
 }

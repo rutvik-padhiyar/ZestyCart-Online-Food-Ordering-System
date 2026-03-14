@@ -336,6 +336,92 @@
   font-size: 0.95rem;
 }
 
+.delivery-strip {
+  position: relative;
+}
+
+.delivery-strip-inner {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 74px;
+  padding: 10px 16px;
+  overflow: hidden;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    radial-gradient(circle at center, rgba(245, 158, 11, 0.14), transparent 38%),
+    linear-gradient(135deg, rgba(7, 22, 18, 0.88), rgba(6, 20, 32, 0.88));
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.18);
+}
+
+.delivery-strip-point {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.delivery-strip-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fde68a;
+}
+
+.delivery-strip-track {
+  position: relative;
+  height: 100%;
+}
+
+.delivery-strip-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, rgba(255,255,255,0.15), rgba(16,185,129,0.45), rgba(255,255,255,0.15));
+}
+
+.delivery-strip-rider {
+  position: absolute;
+  top: 50%;
+  left: 10%;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #f59e0b, #10b981);
+  color: #04130f;
+  font-size: 0.8rem;
+  font-weight: 800;
+  box-shadow: 0 12px 28px rgba(16, 185, 129, 0.28);
+  transform: translateY(-50%);
+  animation: deliveryRide 7s ease-in-out infinite;
+}
+
+.delivery-strip-badge {
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 @keyframes foodScroll {
   from {
     transform: translateX(0);
@@ -368,6 +454,18 @@
   }
 }
 
+@keyframes deliveryRide {
+  0% {
+    left: 8%;
+  }
+  50% {
+    left: calc(100% - 138px);
+  }
+  100% {
+    left: 8%;
+  }
+}
+
 @media (min-width: 768px) {
   .food-spotlight-card {
     grid-template-columns: 1fr 0.9fr;
@@ -393,5 +491,21 @@
   .food-marquee-card {
     min-width: 240px;
     height: 104px;
+  }
+
+  .delivery-strip-inner {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    min-height: 110px;
+    border-radius: 28px;
+  }
+
+  .delivery-strip-track {
+    min-height: 36px;
+  }
+
+  .delivery-strip-point,
+  .delivery-strip-point-end {
+    justify-content: center;
   }
 }

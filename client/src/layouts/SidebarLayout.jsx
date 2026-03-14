@@ -10,6 +10,7 @@ import {
   Store,
   MessageSquareMore,
   ScrollText,
+  Bike,
   Menu,
   X,
 } from "lucide-react";
@@ -23,6 +24,7 @@ const links = [
   { name: "Restaurants", path: "/admin/restaurants", icon: Store },
   { name: "Feedbacks", path: "/admin/feedbacks", icon: MessageSquareMore },
   { name: "Blogs", path: "/admin/blogs", icon: ScrollText },
+  { name: "Delivery", path: "/admin/delivery-partners", icon: Bike },
 ];
 
 export default function SidebarLayout({ children }) {

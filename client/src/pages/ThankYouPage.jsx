@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import HomeFeedbackSection from "../components/HomeFeedbackSection";
 
-const API_BASE = process.env["REACT_APP_BACKEND_URL"] || `${API_BASE}`;
+const API_BASE = process.env["REACT_APP_BACKEND_URL"] || "http://localhost:5000";
 const LOGO_SRC = "/images/zesto.png";
 
 export default function ThankYouPage() {

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { ArrowRight, LockKeyhole, Mail } from "lucide-react";
 
-const BACKEND_URL = process.env["REACT_APP_BACKEND_URL"] || `${BACKEND_URL}`;
+const BACKEND_URL = process.env["REACT_APP_BACKEND_URL"] || "http://localhost:5000";
 
 export default function Login() {
   const [formData, setFormData] = useState({ email: "", password: "" });

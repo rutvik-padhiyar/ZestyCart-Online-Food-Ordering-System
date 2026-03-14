@@ -6,6 +6,8 @@
         "scripts": {
                 "start": "node server.js",
                 "dev": "node server.js",
+                "backfill:media": "node scripts/backfillRestaurantMedia.js",
+                "seed:luxury": "node scripts/seedLuxuryCatalog.js",
                 "test": "echo \"Error: no test specified\" && exit 1"
         },
         "keywords": [],

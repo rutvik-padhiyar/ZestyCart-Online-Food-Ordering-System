@@ -4,7 +4,7 @@ import { MessageSquareQuote, Send } from "lucide-react";
 import SidebarLayout from "../../layouts/SidebarLayout";
 import "../../styles/admin.css";
 
-const BACKEND_URL = process.env["REACT_APP_BACKEND_URL"] || `${BACKEND_URL}`;
+const BACKEND_URL = process.env["REACT_APP_BACKEND_URL"] || "http://localhost:5000";
 
 export default function AdminFeedback() {
   const [feedbacks, setFeedbacks] = useState([]);
@@ -24,7 +24,7 @@ export default function AdminFeedback() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const feedbackData = response.data.feedbacks || response.data || [];
-      setFeedbacks(feedbackData);
+      setFeedbacks(Array.isArray(feedbackData) ? feedbackData : []);
     } catch (error) {
       console.error("Failed to fetch feedbacks:", error);
       setFeedbacks([]);

@@ -1,155 +1,91 @@
-// src/pages/DeliverySignup.jsx
 import React, { useState } from "react";
 import axios from "axios";
-import { useNavigate, Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 export default function DeliverySignup() {
   const navigate = useNavigate();
-
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     mobile: "",
     password: "",
     vehicleType: "",
+    vehicleNumber: "",
     address: "",
+    aadhaarNumber: "",
+    drivingLicenseNumber: "",
+    aadhaarImage: "",
+    drivingLicenseImage: "",
   });
-
   const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
+  const [message, setMessage] = useState("");
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (event) => {
+    setFormData((current) => ({ ...current, [event.target.name]: event.target.value }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setLoading(true);
-    setErrorMsg("");
-
+    setMessage("");
     try {
-      // ✅ Backend API call
-      const res = await axios.post(
-        `${process.env.REACT_APP_API_URL || "http://localhost:5000"}/api/delivery-auth/signup`,
-        formData
-      );
-
-      alert("✅ Signup successful! Please login.");
-      navigate("/delivery-login"); // ✅ Redirect to Delivery Login page
-    } catch (err) {
-      console.error("Signup error:", err);
-      setErrorMsg(err.response?.data?.message || "❌ Signup failed");
+      await axios.post(`${API_URL}/api/delivery-auth/signup`, formData);
+      setMessage("Signup complete. Use OTP login on mobile number.");
+      window.setTimeout(() => navigate("/delivery-login"), 1000);
+    } catch (error) {
+      setMessage(error.response?.data?.message || "Signup failed");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 p-6">
-      <div className="bg-white/10 backdrop-blur-md rounded-3xl p-8 w-full max-w-md shadow-lg border border-white/20">
-        <h2 className="text-2xl font-bold text-white mb-6 text-center">
-          🛵 Delivery Partner Signup
-        </h2>
+    <div className="delivery-auth-shell">
+      <div className="delivery-auth-card delivery-auth-card-wide">
+        <p className="delivery-auth-kicker">Rider Onboarding</p>
+        <h1>Create delivery partner profile</h1>
+        <p className="delivery-auth-copy">
+          Signup, KYC details, vehicle info and pickup-ready delivery profile in one place.
+        </p>
 
-        {errorMsg && (
-          <p className="text-red-400 text-sm text-center mb-3">{errorMsg}</p>
-        )}
-
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <input
-            type="text"
-            name="name"
-            placeholder="Full Name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-            className="input-field w-full"
-          />
-          <input
-            type="email"
-            name="email"
-            placeholder="Email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            className="input-field w-full"
-          />
-          <input
-            type="tel"
-            name="mobile"
-            placeholder="Mobile Number"
-            value={formData.mobile}
-            onChange={handleChange}
-            required
-            pattern="[0-9]{10}"
-            className="input-field w-full"
-          />
-          <input
-            type="password"
-            name="password"
-            placeholder="Password (min 6 chars)"
-            value={formData.password}
-            onChange={handleChange}
-            required
-            minLength={6}
-            className="input-field w-full"
-          />
-          <input
-            type="text"
-            name="vehicleType"
-            placeholder="Vehicle Type (Bike/Cycle/Scooter/Car)"
-            value={formData.vehicleType}
-            onChange={handleChange}
-            required
-            className="input-field w-full"
-          />
-          <input
-            type="text"
-            name="address"
-            placeholder="Current Address"
-            value={formData.address}
-            onChange={handleChange}
-            required
-            className="input-field w-full"
-          />
-
-          <button
-            type="submit"
-            className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-full transition-all duration-300"
-            disabled={loading}
-          >
-            {loading ? "Signing up..." : "Sign Up"}
+        <form className="delivery-grid-form" onSubmit={handleSubmit}>
+          {[
+            ["name", "Full Name"],
+            ["email", "Email"],
+            ["mobile", "Mobile"],
+            ["password", "Password"],
+            ["vehicleType", "Vehicle Type"],
+            ["vehicleNumber", "Vehicle Number"],
+            ["address", "Current Address"],
+            ["aadhaarNumber", "Aadhaar Number"],
+            ["drivingLicenseNumber", "Driving License"],
+            ["aadhaarImage", "Aadhaar Image URL"],
+            ["drivingLicenseImage", "License Image URL"],
+          ].map(([name, label]) => (
+            <label key={name}>
+              {label}
+              <input
+                type={name === "password" ? "password" : "text"}
+                name={name}
+                value={formData[name]}
+                onChange={handleChange}
+                required={["name", "email", "mobile", "vehicleType", "address"].includes(name)}
+              />
+            </label>
+          ))}
+          <button type="submit" disabled={loading} className="delivery-grid-submit">
+            {loading ? "Creating profile..." : "Create Profile"}
           </button>
         </form>
 
-        {/* ✅ Already have an account link */}
-        <p className="text-center text-gray-300 mt-4 text-sm">
-          Already have an account?{" "}
-          <Link
-            to="/delivery-login"
-            className="text-green-400 hover:text-green-300"
-          >
-            Login here
-          </Link>
+        {message ? <p className="delivery-auth-message">{message}</p> : null}
+
+        <p className="delivery-auth-switch">
+          Already registered? <Link to="/delivery-login">Login with OTP</Link>
         </p>
       </div>
-
-      <style>{`
-        .input-field {
-          background: rgba(255,255,255,0.1);
-          color: white;
-          padding: 0.75rem 1rem;
-          border-radius: 1rem;
-          border: 1px solid rgba(255,255,255,0.2);
-          outline: none;
-          transition: 0.3s;
-        }
-        .input-field:focus {
-          border-color: #00A862;
-          background: rgba(255,255,255,0.2);
-          box-shadow: 0 0 0 3px rgba(0,168,98,0.3);
-        }
-      `}</style>
     </div>
   );
 }
