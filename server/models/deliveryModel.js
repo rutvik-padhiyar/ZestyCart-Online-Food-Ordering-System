@@ -38,7 +38,12 @@ const deliverySchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "Order",
         default: null
-    }
+    },
+    activeOrders: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Order",
+    }],
+    maxConcurrentOrders: { type: Number, default: 3 },
 }, { timestamps: true });
 
 // ✅ Create 2dsphere index for geo queries

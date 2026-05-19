@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { CreditCard, LocateFixed, Truck } from "lucide-react";
@@ -38,28 +38,16 @@ export default function Checkout() {
 
   const EMERGENCY_FEE = 12;
 
-  const axiosConfig = () => (token ? { headers: { Authorization: `Bearer ${token}` } } : {});
+  const axiosConfig = useMemo(() => (token ? { headers: { Authorization: `Bearer ${token}` } } : {}), [token]);
 
-  useEffect(() => {
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    document.body.appendChild(script);
-  }, []);
-
-  useEffect(() => {
-    fetchCart();
-    fetchAddresses();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, userId]);
-
-  const fetchCart = async () => {
+  const fetchCart = useCallback(async () => {
     try {
       let res;
       try {
-        res = await axios.get(`${API_BASE}/api/cart`, axiosConfig());
+        res = await axios.get(`${API_BASE}/api/cart`, axiosConfig);
       } catch (error) {
         if (userId) {
-          res = await axios.get(`${API_BASE}/api/cart/get/${userId}`, axiosConfig());
+          res = await axios.get(`${API_BASE}/api/cart/get/${userId}`, axiosConfig);
         } else {
           throw error;
         }
@@ -72,16 +60,16 @@ export default function Checkout() {
     } catch (error) {
       setCart({ items: [], total: 0 });
     }
-  };
+  }, [axiosConfig, userId]);
 
-  const fetchAddresses = async () => {
+  const fetchAddresses = useCallback(async () => {
     try {
       let res;
       try {
-        res = await axios.get(`${API_BASE}/api/address/list`, axiosConfig());
+        res = await axios.get(`${API_BASE}/api/address/list`, axiosConfig);
       } catch (error) {
         if (userId) {
-          res = await axios.get(`${API_BASE}/api/address/list/${userId}`, axiosConfig());
+          res = await axios.get(`${API_BASE}/api/address/list/${userId}`, axiosConfig);
         } else {
           throw error;
         }
@@ -91,7 +79,22 @@ export default function Checkout() {
     } catch (error) {
       setSavedAddresses([]);
     }
-  };
+  }, [axiosConfig, userId]);
+
+  useEffect(() => {
+    const existingScript = document.querySelector('script[data-razorpay="true"]');
+    if (existingScript) return;
+
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.setAttribute("data-razorpay", "true");
+    document.body.appendChild(script);
+  }, []);
+
+  useEffect(() => {
+    fetchCart();
+    fetchAddresses();
+  }, [fetchCart, fetchAddresses]);
 
   const useCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -153,7 +156,7 @@ export default function Checkout() {
     setSavingAddress(true);
     try {
       const payload = { ...form, userId: userId || undefined };
-      const res = await axios.post(`${API_BASE}/api/address/add`, payload, axiosConfig());
+      const res = await axios.post(`${API_BASE}/api/address/add`, payload, axiosConfig);
       const saved = res.data?.address || res.data;
       await fetchAddresses();
       if (saved?._id) setSelectedAddressId(saved._id);
@@ -196,7 +199,7 @@ export default function Checkout() {
 
     setSavingAddress(true);
     try {
-      await axios.put(`${API_BASE}/api/address/update/${editingId}`, form, axiosConfig());
+      await axios.put(`${API_BASE}/api/address/update/${editingId}`, form, axiosConfig);
       await fetchAddresses();
       setIsEditing(false);
       setEditingId(null);
@@ -212,7 +215,7 @@ export default function Checkout() {
   const deleteAddress = async (id) => {
     if (!window.confirm("Delete this address?")) return;
     try {
-      await axios.delete(`${API_BASE}/api/address/delete/${id}`, axiosConfig());
+      await axios.delete(`${API_BASE}/api/address/delete/${id}`, axiosConfig);
       await fetchAddresses();
       if (selectedAddressId === id) setSelectedAddressId(null);
       toast.success("Address deleted.");
@@ -241,9 +244,9 @@ export default function Checkout() {
         emergency: !!emergency,
       };
 
-      const response = await axios.post(`${API_BASE}/api/order/place`, payload, axiosConfig());
+      const response = await axios.post(`${API_BASE}/api/order/place`, payload, axiosConfig);
       toast.success("Order placed successfully.");
-      navigate(`/thank-you/${response.data.order._id}`);
+      navigate(`/thank-you/${response.data.order._id}`, { state: { order: response.data.order } });
     } catch (error) {
       toast.error("Failed to place order.");
     } finally {
@@ -277,7 +280,7 @@ export default function Checkout() {
       const orderRes = await axios.post(
         `${API_BASE}/api/payment/create-order`,
         { amount: totalPayable },
-        axiosConfig()
+        axiosConfig
       );
 
       const orderData = orderRes.data.order;
@@ -285,7 +288,7 @@ export default function Checkout() {
         key: razorpayKey,
         amount: orderData.amount,
         currency: "INR",
-        name: "Zesto",
+        name: "ZestyCart",
         description: "Food Order Payment",
         order_id: orderData.id,
         handler: async function (response) {
@@ -306,11 +309,11 @@ export default function Checkout() {
             const placedOrder = await axios.post(
               `${API_BASE}/api/order/place`,
               payload,
-              axiosConfig()
+              axiosConfig
             );
 
             if (placedOrder.data?.order?._id) {
-              navigate(`/thank-you/${placedOrder.data.order._id}`);
+              navigate(`/thank-you/${placedOrder.data.order._id}`, { state: { order: placedOrder.data.order } });
               return;
             }
 
@@ -336,8 +339,8 @@ export default function Checkout() {
       <ToastContainer />
       <div className="public-section pt-24">
         <section className="public-hero rounded-[36px] px-8 py-10 text-white">
-          <div className="public-pill">Checkout suite</div>
-          <h1 className="mt-6 text-4xl font-semibold tracking-tight lg:text-5xl">Finalize delivery, payment and address details in one premium flow.</h1>
+          <div className="public-pill">Checkout</div>
+          <h1 className="mt-6 text-4xl font-semibold tracking-tight lg:text-5xl">Finalize delivery, payment and address details.</h1>
         </section>
 
         <div className="mt-8 grid gap-8 xl:grid-cols-[1.3fr_0.9fr]">

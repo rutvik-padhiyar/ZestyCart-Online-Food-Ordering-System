@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: zesto-api
+    name: zestycart-api
     runtime: node
     rootDir: server
     buildCommand: npm install

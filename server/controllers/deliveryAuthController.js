@@ -3,6 +3,8 @@ const jwt = require("jsonwebtoken");
 const axios = require("axios");
 const DeliveryPartner = require("../models/deliveryModel");
 const Order = require("../models/orderModel");
+const { emitOrderEvent } = require("../utils/orderEvents");
+const { appendTrackingEvent, ensureOrderLocation } = require("../utils/platformIntelligence");
 
 const TOMTOM_API_KEY = process.env.TOMTOM_API_KEY;
 const OTP_TTL_MS = 5 * 60 * 1000;
@@ -171,9 +173,11 @@ exports.getProfile = async (req, res) => {
 
 exports.updateAvailability = async (req, res) => {
   try {
+    const requestedAvailability = Boolean(req.body.isAvailable);
+    const activeOrdersCount = Array.isArray(req.deliveryPartner.activeOrders) ? req.deliveryPartner.activeOrders.length : 0;
     const partner = await DeliveryPartner.findByIdAndUpdate(
       req.deliveryPartner._id,
-      { isAvailable: Boolean(req.body.isAvailable) },
+      { isAvailable: requestedAvailability && activeOrdersCount < Number(req.deliveryPartner.maxConcurrentOrders || 3) },
       { new: true }
     ).select("-password -otp");
 
@@ -232,26 +236,49 @@ exports.getNearbyOrders = async (req, res) => {
     const coordinates = req.deliveryPartner.location?.coordinates || [72.5714, 23.0225];
     const radiusKm = Number(req.query.radius || 12);
 
-    const orders = await Order.find({
-      deliveryBoy: null,
-      status: { $in: ["placed", "confirmed"] },
-      location: {
-        $near: {
-          $geometry: { type: "Point", coordinates },
-          $maxDistance: radiusKm * 1000,
+    const [assignedPendingOrders, nearbyReadyOrders] = await Promise.all([
+      Order.find({
+        deliveryBoy: req.deliveryPartner._id,
+        deliveryStatus: "pending",
+      })
+        .populate("restaurant", "name city state address location restaurantImage")
+        .populate("user", "name")
+        .populate("items.food", "name price image")
+        .sort({ createdAt: -1 })
+        .limit(20),
+      Order.find({
+        deliveryBoy: null,
+        restaurantStatus: "ready",
+        status: "confirmed",
+        location: {
+          $near: {
+            $geometry: { type: "Point", coordinates },
+            $maxDistance: radiusKm * 1000,
+          },
         },
-      },
-    })
-      .populate("restaurant", "name city state address location restaurantImage")
-      .populate("user", "name")
-      .populate("items.food", "name price image")
-      .sort({ createdAt: -1 })
-      .limit(20);
+      })
+        .populate("restaurant", "name city state address location restaurantImage")
+        .populate("user", "name")
+        .populate("items.food", "name price image")
+        .sort({ createdAt: -1 })
+        .limit(20),
+    ]);
+
+    const orderMap = new Map();
+    [...assignedPendingOrders, ...nearbyReadyOrders].forEach((order) => {
+      orderMap.set(String(order._id), order);
+    });
+    const orders = Array.from(orderMap.values()).sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
 
     return res.json({
       orders: orders.map((order) => ({
         ...order.toObject(),
-        notificationLabel: "Nearby order request",
+        notificationLabel:
+          String(order.deliveryBoy || "") === String(req.deliveryPartner._id)
+            ? "Restaurant assigned this pickup to you"
+            : "Nearby ready-for-pickup request",
         earningsPreview: calculateDeliveryFee(order),
       })),
     });
@@ -262,7 +289,11 @@ exports.getNearbyOrders = async (req, res) => {
 
 exports.getAssignedOrders = async (req, res) => {
   try {
-    const orders = await Order.find({ deliveryBoy: req.deliveryPartner._id, status: { $ne: "delivered" } })
+    const orders = await Order.find({
+      deliveryBoy: req.deliveryPartner._id,
+      status: { $ne: "delivered" },
+      deliveryStatus: { $ne: "pending" },
+    })
       .populate("restaurant", "name city state address location restaurantImage")
       .populate("user", "name")
       .populate("items.food", "name price image")
@@ -281,26 +312,45 @@ exports.respondToOrder = async (req, res) => {
     if (!order) return res.status(404).json({ message: "Order not found" });
 
     if (action === "accept") {
+      if (order.deliveryBoy && String(order.deliveryBoy) !== String(req.deliveryPartner._id)) {
+        return res.status(403).json({ message: "Order assigned to another delivery partner" });
+      }
+
       order.deliveryBoy = req.deliveryPartner._id;
       order.status = "assigned";
       order.deliveryStatus = "accepted";
       order.acceptedAt = new Date();
-      order.deliveryConfirmationOtp = buildOtp();
+      order.deliveryConfirmationOtp = order.deliveryConfirmationOtp || buildOtp();
       order.deliveryEarnings = calculateDeliveryFee(order);
 
       await DeliveryPartner.findByIdAndUpdate(req.deliveryPartner._id, {
+        $addToSet: { activeOrders: order._id },
         isAvailable: false,
         currentOrder: order._id,
       });
     } else if (action === "reject") {
+      if (order.deliveryBoy && String(order.deliveryBoy) !== String(req.deliveryPartner._id)) {
+        return res.status(403).json({ message: "Order assigned to another delivery partner" });
+      }
+
       order.deliveryBoy = null;
       order.status = "confirmed";
       order.deliveryStatus = "rejected";
+      order.assignedDeliveryAt = null;
+
+      await DeliveryPartner.findByIdAndUpdate(req.deliveryPartner._id, {
+        $pull: { activeOrders: order._id },
+        isAvailable: true,
+        currentOrder: null,
+      });
     } else {
       return res.status(400).json({ message: "Invalid action" });
     }
 
-    await order.save();
+    ensureOrderLocation(order);
+    appendTrackingEvent(order, action === "accept" ? "delivery_partner_accepted" : "delivery_partner_rejected", "delivery", `Delivery partner ${action}ed the order`);
+    await order.save({ validateBeforeSave: false });
+    emitOrderEvent(req, `delivery.${action}`, order);
     return res.json({ message: `Order ${action}ed`, order });
   } catch (error) {
     return res.status(500).json({ message: "Failed to respond to order", error: error.message });
@@ -317,15 +367,20 @@ exports.updateOrderStage = async (req, res) => {
       order.deliveryStatus = "picked";
       order.status = "picked";
       order.pickedAt = new Date();
+      appendTrackingEvent(order, "picked_up", "delivery", "Order picked up by delivery partner");
     } else if (stage === "on-the-way") {
       order.deliveryStatus = "on-the-way";
       order.status = "on-the-way";
       order.outForDeliveryAt = new Date();
+      order.routeOptimizationScore = 92;
+      appendTrackingEvent(order, "on_the_way", "delivery", "Order is out for delivery");
     } else {
       return res.status(400).json({ message: "Invalid stage" });
     }
 
-    await order.save();
+    ensureOrderLocation(order);
+    await order.save({ validateBeforeSave: false });
+    emitOrderEvent(req, `delivery.${stage}`, order);
     return res.json({ message: "Order stage updated", order });
   } catch (error) {
     return res.status(500).json({ message: "Failed to update order stage", error: error.message });
@@ -345,15 +400,19 @@ exports.confirmDelivery = async (req, res) => {
     order.status = "delivered";
     order.deliveredAt = new Date();
     order.deliveryConfirmationPhoto = photo || "";
-    await order.save();
+    appendTrackingEvent(order, "delivered", "delivery", "Customer delivery confirmed via OTP");
+    ensureOrderLocation(order);
+    await order.save({ validateBeforeSave: false });
 
     const partner = await DeliveryPartner.findById(req.deliveryPartner._id);
-    partner.isAvailable = true;
+    partner.activeOrders = (partner.activeOrders || []).filter((item) => String(item) !== String(order._id));
+    partner.isAvailable = partner.activeOrders.length < Number(partner.maxConcurrentOrders || 3);
     partner.currentOrder = null;
     partner.totalEarnings = Number(partner.totalEarnings || 0) + Number(order.deliveryEarnings || 0);
     partner.completedDeliveries = Number(partner.completedDeliveries || 0) + 1;
     await partner.save();
 
+    emitOrderEvent(req, "delivery.delivered", order);
     return res.json({ message: "Delivery confirmed", order, partner: await serializePartner(partner._id) });
   } catch (error) {
     return res.status(500).json({ message: "Failed to confirm delivery", error: error.message });

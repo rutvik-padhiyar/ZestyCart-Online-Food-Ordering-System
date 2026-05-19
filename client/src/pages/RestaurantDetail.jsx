@@ -38,7 +38,7 @@ export default function RestaurantDetail() {
     return (
       <div className="public-shell">
         <div className="public-section pb-16 pt-24">
-          <div className="public-glass rounded-[32px] px-6 py-12 text-sm text-slate-300">Loading luxury restaurant profile...</div>
+          <div className="public-glass rounded-[32px] px-6 py-12 text-sm text-slate-300">Loading restaurant details...</div>
         </div>
       </div>
     );
@@ -75,7 +75,7 @@ export default function RestaurantDetail() {
             <div>
               <div className="public-pill">
                 <Sparkles size={14} />
-                Luxury Restaurant Profile
+                Restaurant Details
               </div>
               <h1 className="mt-6 text-4xl font-semibold tracking-tight lg:text-6xl">{restaurant.name}</h1>
               <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-emerald-100/80">
@@ -93,12 +93,12 @@ export default function RestaurantDetail() {
                 </span>
               </div>
               <p className="mt-5 max-w-3xl text-base leading-8 text-emerald-100/85">
-                {restaurant.description || restaurant.shortDescription || "A premium dining destination with signature interiors, expressive plating and elegant service."}
+                {restaurant.description || restaurant.shortDescription || "View restaurant details, menu highlights and service information."}
               </p>
 
               <div className="mt-7 grid gap-4 sm:grid-cols-3">
                 <InfoBox label="Cost for Two" value={`Rs ${restaurant.avgCostForTwo || 1200}`} />
-                <InfoBox label="Dining Style" value={restaurant.priceRange || "Premium Casual"} />
+                <InfoBox label="Dining Style" value={restaurant.priceRange || "Casual Dining"} />
                 <InfoBox label="Open Hours" value={restaurant.openingHours || "11:00 AM - 11:30 PM"} />
               </div>
 
@@ -138,12 +138,12 @@ export default function RestaurantDetail() {
 
         <section className="mt-8 grid gap-6 xl:grid-cols-[1fr_1.1fr]">
           <div className="public-glass rounded-[34px] px-6 py-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-200/80">Signature Notes</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-200/80">Restaurant Info</p>
             <div className="mt-5 space-y-5">
               <DetailLine title="Address" text={restaurant.address || "Prime city-center address"} />
-              <DetailLine title="Short Story" text={restaurant.shortDescription || "Designed for guests who want elevated plating, mood lighting and premium service cadence."} />
+              <DetailLine title="Description" text={restaurant.shortDescription || "Restaurant information is not available yet."} />
               <DetailLine title="Cuisines" text={(restaurant.cuisines || []).join(", ") || "North Indian, Continental, Asian"} />
-              <DetailLine title="Highlights" text={(restaurant.features || []).join(", ") || "Chef tasting menu, rooftop seating, valet access"} />
+              <DetailLine title="Highlights" text={(restaurant.features || []).join(", ") || "Dine-in, takeaway and delivery"} />
             </div>
           </div>
 
@@ -151,22 +151,22 @@ export default function RestaurantDetail() {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-700">Why guests pick it</p>
-                <h2 className="mt-2 text-3xl font-semibold text-slate-950">Luxury touchpoints</h2>
+                <h2 className="mt-2 text-3xl font-semibold text-slate-950">Available features</h2>
               </div>
               <div className="rounded-full bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700">
-                Premium Verified
+                Verified
               </div>
             </div>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              {(restaurant.tags || ["Fine Dining", "Romantic Tables", "City Favorite", "Chef Special"]).slice(0, 6).map((tag) => (
+              {(restaurant.tags || ["Popular", "Top Rated", "Fast Delivery", "Customer Favorite"]).slice(0, 6).map((tag) => (
                 <div key={tag} className="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-4">
                   <div className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
                     <ShieldCheck size={18} />
                   </div>
                   <p className="mt-4 text-base font-semibold text-slate-900">{tag}</p>
                   <p className="mt-2 text-sm leading-6 text-slate-500">
-                    Signature service styling aur polished guest journey ke saath curated experience.
+                    This restaurant is listed with current menu and service details.
                   </p>
                 </div>
               ))}

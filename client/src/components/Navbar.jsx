@@ -1,13 +1,29 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useCallback, useContext, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { jwtDecode } from "jwt-decode";
 import { Menu, ShoppingBag, UserCircle2, X } from "lucide-react";
 import { CartContext } from "../context/CartContext";
+import { clearUserSession, getStoredToken, validateStoredToken } from "../utils/auth";
 
 export default function Navbar() {
   const [userRole, setUserRole] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const { cartCount, fetchCartCount } = useContext(CartContext);
+
+  const syncSession = useCallback(() => {
+    const token = getStoredToken();
+    if (!token) {
+      setUserRole(null);
+      return;
+    }
+
+    const decoded = validateStoredToken();
+    if (!decoded) {
+      setUserRole(null);
+      return;
+    }
+
+    setUserRole(decoded.role || "user");
+  }, []);
 
   useEffect(() => {
     syncSession();
@@ -26,31 +42,12 @@ export default function Navbar() {
       window.removeEventListener("cartUpdated", handleCartUpdate);
       window.removeEventListener("loginSuccess", handleLoginSuccess);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [syncSession, fetchCartCount]);
 
-  const syncSession = () => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setUserRole(null);
-      return;
-    }
-
-    try {
-      const decoded = jwtDecode(token);
-      setUserRole(decoded.role || "user");
-    } catch (error) {
-      setUserRole(null);
-    }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("currentUser");
-    setUserRole(null);
-    window.dispatchEvent(new Event("loginSuccess"));
+  const handleLogout = useCallback(() => {
+    clearUserSession();
     window.location.href = "/login";
-  };
+  }, []);
 
   const navLinks = [
     { label: "Home", to: "/" },
@@ -60,27 +57,27 @@ export default function Navbar() {
   ];
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 px-3 pt-3">
-      <div className="public-glass mx-auto flex max-w-7xl items-center justify-between rounded-[28px] px-5 py-4 text-white lg:px-6">
-        <Link to="/" className="flex items-center gap-3">
-          <div className="rounded-2xl bg-emerald-400/15 px-3 py-2 text-xl">🍕</div>
-          <div>
-            <p className="text-xl font-semibold tracking-tight">Zesto</p>
-            <p className="text-xs uppercase tracking-[0.32em] text-emerald-200/70">
-              Luxury Fooding
-            </p>
+    <header className="site-header">
+      <div className="public-glass site-header-bar">
+        <Link to="/" className="site-brand" onClick={() => setMenuOpen(false)}>
+          <div className="site-brand-mark">
+            <img src="/images/fav.png" alt="ZestyCart" className="site-brand-logo" />
+          </div>
+          <div className="site-brand-copy">
+            <p className="site-brand-title">ZestyCart</p>
+            <p className="site-brand-tagline">Food Ordering</p>
           </div>
         </Link>
 
-        <nav className="hidden items-center gap-5 lg:flex">
+        <nav className="site-nav">
           {navLinks.map((link) => (
-            <Link key={link.to} to={link.to} className="text-sm font-medium text-slate-200 transition hover:text-white">
+            <Link key={link.to} to={link.to} className="site-nav-link">
               {link.label}
             </Link>
           ))}
         </nav>
 
-        <div className="hidden items-center gap-3 lg:flex">
+        <div className="site-actions">
           {userRole !== "admin" && (
             <Link to="/cart" className="public-button public-button-secondary text-sm">
               <ShoppingBag size={16} />
@@ -89,20 +86,16 @@ export default function Navbar() {
           )}
 
           {userRole === "user" && (
-            <div className="group relative">
-              <button className="public-button public-button-primary text-sm">
+            <div className="site-account-menu">
+              <button type="button" className="public-button public-button-primary text-sm">
                 <UserCircle2 size={16} />
                 My Account
               </button>
-              <div className="invisible absolute right-0 top-full mt-3 min-w-[220px] rounded-[22px] border border-white/10 bg-slate-950/95 p-2 opacity-0 shadow-2xl transition-all group-hover:visible group-hover:opacity-100">
+              <div className="site-account-dropdown">
                 <NavMenuLink to="/my-orders">My Orders</NavMenuLink>
                 <NavMenuLink to="/my-profile">My Profile</NavMenuLink>
                 <NavMenuLink to="/help-center">Help Center</NavMenuLink>
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="mt-1 w-full rounded-2xl px-4 py-3 text-left text-sm font-medium text-rose-300 transition hover:bg-white/5"
-                >
+                <button type="button" onClick={handleLogout} className="site-mobile-link site-mobile-link-danger">
                   Logout
                 </button>
               </div>
@@ -121,38 +114,45 @@ export default function Navbar() {
           )}
         </div>
 
-        <button type="button" className="rounded-2xl border border-white/10 p-3 lg:hidden" onClick={() => setMenuOpen((v) => !v)}>
+        <button
+          type="button"
+          className="site-mobile-toggle"
+          onClick={() => setMenuOpen((value) => !value)}
+          aria-label="Toggle navigation"
+        >
           {menuOpen ? <X size={18} /> : <Menu size={18} />}
         </button>
       </div>
 
       {menuOpen && (
-        <div className="public-glass mx-auto mt-3 max-w-7xl rounded-[28px] p-4 text-white lg:hidden">
-          <div className="flex flex-col gap-2">
+        <div className="public-glass site-mobile-panel">
+          <div className="site-mobile-links">
             {navLinks.map((link) => (
-              <Link key={link.to} to={link.to} onClick={() => setMenuOpen(false)} className="rounded-2xl px-4 py-3 text-sm font-medium hover:bg-white/5">
+              <Link key={link.to} to={link.to} onClick={() => setMenuOpen(false)} className="site-mobile-link">
                 {link.label}
               </Link>
             ))}
+
             {userRole === "user" && (
               <>
-                <Link to="/my-orders" onClick={() => setMenuOpen(false)} className="rounded-2xl px-4 py-3 text-sm font-medium hover:bg-white/5">
+                <Link to="/my-orders" onClick={() => setMenuOpen(false)} className="site-mobile-link">
                   My Orders
                 </Link>
-                <Link to="/my-profile" onClick={() => setMenuOpen(false)} className="rounded-2xl px-4 py-3 text-sm font-medium hover:bg-white/5">
+                <Link to="/my-profile" onClick={() => setMenuOpen(false)} className="site-mobile-link">
                   My Profile
                 </Link>
-                <button type="button" onClick={handleLogout} className="rounded-2xl px-4 py-3 text-left text-sm font-medium text-rose-300 hover:bg-white/5">
+                <button type="button" onClick={handleLogout} className="site-mobile-link site-mobile-link-danger">
                   Logout
                 </button>
               </>
             )}
+
             {!userRole && (
               <>
-                <Link to="/login" onClick={() => setMenuOpen(false)} className="rounded-2xl px-4 py-3 text-sm font-medium hover:bg-white/5">
+                <Link to="/login" onClick={() => setMenuOpen(false)} className="site-mobile-link">
                   Login
                 </Link>
-                <Link to="/signup" onClick={() => setMenuOpen(false)} className="rounded-2xl px-4 py-3 text-sm font-medium hover:bg-white/5">
+                <Link to="/signup" onClick={() => setMenuOpen(false)} className="site-mobile-link">
                   Sign Up
                 </Link>
               </>
@@ -166,7 +166,7 @@ export default function Navbar() {
 
 function NavMenuLink({ to, children }) {
   return (
-    <Link to={to} className="block rounded-2xl px-4 py-3 text-sm font-medium text-slate-200 transition hover:bg-white/5">
+    <Link to={to} className="site-menu-link">
       {children}
     </Link>
   );

@@ -28,6 +28,7 @@ const orderSchema = new mongoose.Schema({
         enum: ["pending", "paid", "failed", "refunded"],
         default: "pending"
     },
+    emergency: { type: Boolean, default: false },
 
     address: { type: String, required: true },
     mobile: { type: String, required: true },
@@ -50,6 +51,29 @@ const orderSchema = new mongoose.Schema({
         enum: ["placed", "confirmed", "rejected", "assigned", "picked", "on-the-way", "delivered"],
         default: "placed"
     },
+    restaurantStatus: {
+        type: String,
+        enum: ["new", "accepted", "preparing", "ready", "rejected"],
+        default: "new"
+    },
+    restaurantAcceptedAt: Date,
+    preparationStartedAt: Date,
+    readyForPickupAt: Date,
+    assignedDeliveryAt: Date,
+    estimatedPrepMinutes: { type: Number, default: 15 },
+    priorityScore: { type: Number, default: 0 },
+    routeOptimizationScore: { type: Number, default: 0 },
+    aiSignals: {
+        demandPredictionScore: { type: Number, default: 0 },
+        fraudRiskScore: { type: Number, default: 0 },
+        profitPredictionScore: { type: Number, default: 0 },
+    },
+    trackingTimeline: [{
+        stage: String,
+        actor: String,
+        note: String,
+        at: { type: Date, default: Date.now },
+    }],
 
     deliveryBoy: {
         type: mongoose.Schema.Types.ObjectId,

@@ -5,7 +5,7 @@ const foods = [
   {
     id: "pizza",
     title: "Truffle Fire Pizza",
-    subtitle: "Wood-fired slices with luxe mozzarella finish",
+    subtitle: "Wood-fired slices with mozzarella topping",
     tag: "Chef special",
     image: "/images/pizza.jpg",
     accent: "Amber x Emerald",
@@ -23,7 +23,7 @@ const foods = [
   {
     id: "noodles",
     title: "Midnight Wok Noodles",
-    subtitle: "Street-style wok toss with premium finishing",
+    subtitle: "Street-style wok toss with house seasoning",
     tag: "Hot favourite",
     image: "/images/noodles.jpg",
     accent: "Spice rush",
@@ -50,7 +50,7 @@ const foods = [
   {
     id: "cake",
     title: "Signature Dessert Cake",
-    subtitle: "Celebration layers crafted for late-night cravings",
+    subtitle: "Dessert layers prepared for sweet cravings",
     tag: "Sweet spotlight",
     image: "/images/cake.jpg",
     accent: "Dessert bar",
@@ -82,10 +82,10 @@ export default function FoodShowcaseBanner() {
           <div className="relative z-10">
             <p className="food-showcase-kicker">Fresh drops from your favourite kitchens</p>
             <h2 className="mt-3 max-w-3xl text-3xl font-semibold text-white md:text-5xl">
-              Cravings ko wait mat karvao. Hot, cheesy, buttery, smoky favourites abhi pick karo.
+              Popular dishes ko explore karo aur apna next order choose karo.
             </h2>
             <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-200 md:text-base">
-              Pizza se noodles tak, har swipe par ek naya mood, ek naya flavour aur ek aur reason to order more.
+              Pizza se noodles tak, alag menu items dekhkar apni पसंद ka order place karo.
             </p>
           </div>
 

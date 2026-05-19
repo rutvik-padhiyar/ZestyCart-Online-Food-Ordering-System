@@ -7,21 +7,7 @@ const isLocalhost = Boolean(
 );
 
 export function register() {
-  if (!("serviceWorker" in navigator)) {
-    return;
-  }
-
-  window.addEventListener("load", () => {
-    const swUrl = `${process.env.PUBLIC_URL || ""}/sw.js`;
-
-    if (isLocalhost) {
-      checkValidServiceWorker(swUrl);
-      navigator.serviceWorker.ready.catch(() => {});
-      return;
-    }
-
-    registerValidSW(swUrl);
-  });
+  unregister();
 }
 
 function registerValidSW(swUrl) {
@@ -50,4 +36,17 @@ function checkValidServiceWorker(swUrl) {
     .catch(() => {
       registerValidSW(swUrl);
     });
+}
+
+export function unregister() {
+  if (!("serviceWorker" in navigator)) {
+    return;
+  }
+
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .getRegistrations()
+      .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
+      .catch(() => {});
+  });
 }

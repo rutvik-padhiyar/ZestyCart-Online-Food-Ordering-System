@@ -83,7 +83,7 @@ export default function RestaurantManagement() {
                 Restaurant operations desk
               </h1>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
-                Active and blocked restaurants ko premium management view mein handle karo.
+                Active and blocked restaurants ko yahan se manage karo.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-3">

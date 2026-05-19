@@ -1,72 +1,55 @@
-// src/pages/RestaurantLogin.jsx
 import React, { useState } from "react";
 import axios from "axios";
+import { Link, useNavigate } from "react-router-dom";
+import RestaurantAuthLayout from "./RestaurantAuthLayout";
 
-const RestaurantLogin = () => {
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+
+export default function RestaurantLogin() {
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({ email: "", password: "" });
   const [message, setMessage] = useState("");
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (event) => {
+    setFormData((current) => ({ ...current, [event.target.name]: event.target.value }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setMessage("");
+
     try {
-      const res = await axios.post("http://localhost:5000/api/restaurant-auth/login", formData);
-
-      localStorage.setItem("restaurantToken", res.data.token); // ✅ save token
-      setMessage("Login successful ✅");
-
-      // redirect after login
-      window.location.href = "/dashboard"; 
-    } catch (err) {
-      setMessage(err.response?.data?.message || "Login failed");
+      const response = await axios.post(`${API_URL}/api/restaurant-auth/login`, formData);
+      localStorage.setItem("restaurantToken", response.data.token);
+      localStorage.setItem("restaurantProfile", JSON.stringify(response.data.restaurant));
+      navigate("/restaurant-dashboard");
+    } catch (error) {
+      setMessage(error.response?.data?.message || "Login failed");
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white shadow-lg rounded-lg p-6 w-96"
-      >
-        <h2 className="text-2xl font-bold mb-4">Restaurant Login</h2>
-
-        <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          value={formData.email}
-          onChange={handleChange}
-          className="w-full mb-3 p-2 border rounded"
-          required
-        />
-
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          value={formData.password}
-          onChange={handleChange}
-          className="w-full mb-3 p-2 border rounded"
-          required
-        />
-
-        <button
-          type="submit"
-          className="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600"
-        >
-          Login
-        </button>
-
-        {message && <p className="mt-3 text-center text-sm">{message}</p>}
+    <RestaurantAuthLayout
+      title="Restaurant login"
+      subtitle="Orders manage karne, kitchen update dene aur earnings dekhne ke liye apne restaurant account se sign in karein."
+      footer={
+        <p className="restaurant-auth-switch">
+          New restaurant? <Link to="/restaurant-signup">Create account</Link>
+        </p>
+      }
+    >
+      <form onSubmit={handleSubmit} className="restaurant-auth-form">
+        <label>
+          Email
+          <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="owner@zestycart.com" required />
+        </label>
+        <label>
+          Password
+          <input type="password" name="password" value={formData.password} onChange={handleChange} placeholder="Enter password" required />
+        </label>
+        <button type="submit">Login To Restaurant App</button>
       </form>
-    </div>
+      {message ? <div className="restaurant-auth-message">{message}</div> : null}
+    </RestaurantAuthLayout>
   );
-};
-
-export default RestaurantLogin;
+}

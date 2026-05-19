@@ -139,6 +139,16 @@ exports.login = async(req, res) => {
             return res.status(401).json({ message: "Invalid password" });
         }
 
+        if (user.role === 'admin' && user.twoFactorEnabled) {
+            return res.status(200).json({
+                message: '2FA required',
+                user: {
+                    id: user._id,
+                    role: user.role,
+                }
+            });
+        }
+
         const isAdmin = user.role === "admin";
 
         const token = jwt.sign({ id: user._id, role: user.role, isAdmin },

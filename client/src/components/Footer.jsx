@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { FaFacebookF, FaInstagram, FaLinkedinIn, FaTwitter } from "react-icons/fa";
-import { ArrowUpRight, Gem, ShieldCheck, Sparkles, Star, TimerReset } from "lucide-react";
+import { ArrowUpRight, ShieldCheck, Sparkles, Star, TimerReset } from "lucide-react";
 
 export default function Footer() {
   return (
@@ -13,21 +13,21 @@ export default function Footer() {
       <div className="mx-auto max-w-[1280px] px-6 pb-8 pt-12 lg:px-8 lg:pb-10 lg:pt-14">
         <section className="public-glass rounded-[32px] px-5 py-6 lg:px-6">
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <LuxuryStat icon={<Sparkles size={18} />} label="Curated Experience" value="Premium-first food discovery" />
-            <LuxuryStat icon={<TimerReset size={18} />} label="Priority Flow" value="Faster reorder and smoother checkout" />
-            <LuxuryStat icon={<ShieldCheck size={18} />} label="Trust Layer" value="Verified restaurants and secure payments" />
-            <LuxuryStat icon={<Gem size={18} />} label="VIP Standard" value="Luxury UI with concierge-style support" />
+            <FooterStat icon={<Sparkles size={18} />} label="Browse" value="Find restaurants and menu items quickly" />
+            <FooterStat icon={<TimerReset size={18} />} label="Reorder" value="Access recent orders and reorder faster" />
+            <FooterStat icon={<ShieldCheck size={18} />} label="Support" value="Get help and track order updates easily" />
+            <FooterStat icon={<Star size={18} />} label="Account" value="Manage profile, cart and checkout details" />
           </div>
         </section>
 
         <div className="mt-6 grid gap-6 xl:grid-cols-[1.35fr_1fr_1.05fr]">
           <div>
-            <div className="public-pill">Zesto Black Signature</div>
+            <div className="public-pill">ZestyCart</div>
             <h2 className="mt-4 max-w-xl text-3xl font-semibold leading-tight text-white lg:text-[2rem]">
-              A luxury ordering experience designed to feel private, fast and premium.
+              Order food, manage your cart and track updates from one place.
             </h2>
             <p className="mt-4 max-w-lg text-sm leading-7 text-slate-300">
-              Fine dining energy, polished discovery flow, elegant support touchpoints aur premium delivery experience ko ek single modern platform mein shape kiya gaya hai.
+              Browse restaurants, place orders and contact support whenever needed.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <a
@@ -40,18 +40,18 @@ export default function Footer() {
                 <ArrowUpRight size={16} />
               </a>
               <Link to="/help-center" className="public-button public-button-secondary text-sm">
-                Concierge Support
+                Help Center
               </Link>
             </div>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <VipTip
-                title="Chef's Window"
-                text="Peak dining slots se pehle order place karke faster kitchen acceptance pao."
+              <FooterTip
+                title="Ordering"
+                text="Checkout se pehle cart items aur address details verify kar lo."
               />
-              <VipTip
-                title="Priority Reorder"
-                text="Frequently ordered dishes ko repeat karke checkout friction noticeably kam hota hai."
+              <FooterTip
+                title="Tracking"
+                text="My Orders page se latest order status dekh sakte ho."
               />
             </div>
           </div>
@@ -78,11 +78,11 @@ export default function Footer() {
           </div>
 
           <div className="rounded-[30px] border border-white/10 bg-white/5 p-5">
-            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-amber-200/80">VIP Notes</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-amber-200/80">Useful Info</p>
             <div className="mt-4 space-y-3">
-              <VipLine title="Best order window" text="7:00 PM to 8:30 PM premium menus ke liye sabse active rehta hai." />
-              <VipLine title="Luxury pairing tip" text="High-rated restaurants ke combo meals checkout value improve karte hain." />
-              <VipLine title="Support edge" text="Order concern ho to Help Center se faster resolution path milta hai." />
+              <FooterLine title="My Orders" text="Placed orders aur latest status yahan track kar sakte ho." />
+              <FooterLine title="Checkout" text="Saved address aur payment options checkout page par available hain." />
+              <FooterLine title="Support" text="Order issue ke liye Help Center se support chat start karo." />
             </div>
             <div className="mt-5">
               <h3 className="text-sm font-semibold uppercase tracking-[0.25em] text-emerald-200/75">Follow</h3>
@@ -104,14 +104,14 @@ export default function Footer() {
         </div>
 
         <div className="mt-6 flex flex-col gap-3 border-t border-white/10 pt-5 text-sm text-slate-400 lg:flex-row lg:items-center lg:justify-between">
-          <p>Copyright © {new Date().getFullYear()} Zesto. Crafted for a luxury-first food journey.</p>
+          <p>Copyright © {new Date().getFullYear()} ZestyCart. All rights reserved.</p>
           <div className="flex flex-wrap items-center gap-4">
             <span className="inline-flex items-center gap-2">
               <Star size={14} className="text-amber-300" />
-              Premium UI aesthetic
+              Restaurants
             </span>
-            <span>Private ordering feel</span>
-            <span>Modern concierge support</span>
+            <span>Orders</span>
+            <span>Support</span>
           </div>
         </div>
       </div>
@@ -134,7 +134,7 @@ function FooterGroup({ title, links }) {
   );
 }
 
-function LuxuryStat({ icon, label, value }) {
+function FooterStat({ icon, label, value }) {
   return (
     <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">
       <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-300/15 text-amber-200">
@@ -146,7 +146,7 @@ function LuxuryStat({ icon, label, value }) {
   );
 }
 
-function VipTip({ title, text }) {
+function FooterTip({ title, text }) {
   return (
     <div className="rounded-[24px] border border-white/10 bg-white/5 p-4">
       <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-200/75">{title}</p>
@@ -155,7 +155,7 @@ function VipTip({ title, text }) {
   );
 }
 
-function VipLine({ title, text }) {
+function FooterLine({ title, text }) {
   return (
     <div>
       <p className="text-sm font-semibold text-white">{title}</p>

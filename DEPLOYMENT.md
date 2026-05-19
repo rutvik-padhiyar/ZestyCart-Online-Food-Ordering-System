@@ -1,4 +1,4 @@
-## Zesto deployment
+## ZestyCart deployment
 
 ### Frontend
 

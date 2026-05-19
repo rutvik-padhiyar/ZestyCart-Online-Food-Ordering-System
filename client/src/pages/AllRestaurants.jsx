@@ -3,7 +3,6 @@ import axios from "axios";
 import { Link } from "react-router-dom";
 import { ArrowRight, MapPin, Sparkles } from "lucide-react";
 import { resolveMediaUrl } from "../utils/media";
-import LuxuryEndcap from "../components/LuxuryEndcap";
 
 const API_BASE = process.env["REACT_APP_BACKEND_URL"] || "http://localhost:5000";
 
@@ -26,9 +25,9 @@ export default function AllRestaurants() {
       <div className="public-section pb-16 pt-24 lg:pb-24">
         <section className="public-hero rounded-[36px] px-8 py-10 text-white lg:px-10">
           <div className="public-pill">Restaurant collection</div>
-          <h1 className="mt-6 text-4xl font-semibold tracking-tight lg:text-6xl">Browse every restaurant in one luxury catalog.</h1>
+          <h1 className="mt-6 text-4xl font-semibold tracking-tight lg:text-6xl">Browse all restaurants.</h1>
           <p className="mt-4 max-w-3xl text-base leading-8 text-emerald-100/80">
-            Handpicked listings, polished cards and faster path to menus.
+            View restaurant listings and open their menus.
           </p>
         </section>
 
@@ -60,7 +59,7 @@ export default function AllRestaurants() {
                     <h2 className="text-2xl font-semibold text-slate-950">{restaurant.name}</h2>
                     <div className="mt-3 inline-flex items-center gap-2 text-sm text-slate-600">
                       <MapPin size={16} className="text-emerald-700" />
-                      <span>{restaurant.city || "Premium listing"}</span>
+                      <span>{restaurant.city || "Location not available"}</span>
                       {restaurant.state ? <span className="text-slate-400">• {restaurant.state}</span> : null}
                     </div>
                     <div className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -83,8 +82,6 @@ export default function AllRestaurants() {
             </div>
           )}
         </section>
-
-        <LuxuryEndcap />
       </div>
     </div>
   );

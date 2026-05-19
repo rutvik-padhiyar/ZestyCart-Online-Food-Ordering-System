@@ -53,7 +53,7 @@ export default function Signup() {
         <div className="grid w-full max-w-6xl gap-8 lg:grid-cols-[0.95fr_1.05fr]">
           <section className="public-card rounded-[36px] p-8 lg:p-10">
             <p className="text-sm font-semibold uppercase tracking-[0.25em] text-emerald-600">Create account</p>
-            <h1 className="mt-3 text-3xl font-semibold text-slate-950">Join Zesto</h1>
+            <h1 className="mt-3 text-3xl font-semibold text-slate-950">Join ZestyCart</h1>
             <form onSubmit={handleSubmit} className="mt-8 grid gap-4 md:grid-cols-2">
               <Input placeholder="Name" value={formData.name} onChange={(value) => setFormData((current) => ({ ...current, name: value }))} />
               <Input type="email" placeholder="Email" value={formData.email} onChange={(value) => setFormData((current) => ({ ...current, email: value }))} />
@@ -84,14 +84,14 @@ export default function Signup() {
           </section>
 
           <section className="public-hero rounded-[36px] px-8 py-10 text-white lg:px-10">
-            <div className="public-pill">Luxury onboarding</div>
+            <div className="public-pill">Account Setup</div>
             <h2 className="mt-6 text-4xl font-semibold tracking-tight lg:text-5xl">
-              Your food profile starts with a cleaner, premium setup.
+              Create your account to start ordering.
             </h2>
             <div className="mt-8 space-y-4">
-              <LuxuryBullet text="Location-assisted signup for faster checkout." />
-              <LuxuryBullet text="User account ready for orders, tracking and support." />
-              <LuxuryBullet text="Unified experience that matches the new premium admin style." />
+              <InfoBullet text="Use your location to fill address details faster." />
+              <InfoBullet text="Your account will be ready for orders, tracking and support." />
+              <InfoBullet text="Add your basic details to continue email verification." />
             </div>
           </section>
         </div>
@@ -104,6 +104,6 @@ function Input({ type = "text", placeholder, value, onChange }) {
   return <input type={type} placeholder={placeholder} value={value} onChange={(event) => onChange(event.target.value)} required className="public-input" />;
 }
 
-function LuxuryBullet({ text }) {
+function InfoBullet({ text }) {
   return <div className="rounded-[24px] border border-white/10 bg-white/5 px-5 py-4 text-sm leading-7 text-emerald-100/75">{text}</div>;
 }

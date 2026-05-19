@@ -18,6 +18,11 @@ export default function Profile() {
   const getUserProfile = async () => {
     try {
       const token = localStorage.getItem("token");
+      if (!token) {
+        setLoading(false);
+        // Not logged in, so we can't get a profile.
+        return;
+      }
       const { data } = await axios.get("/api/user/profile", {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -58,6 +63,10 @@ export default function Profile() {
   const handleUpdate = async (event) => {
     event.preventDefault();
     const token = localStorage.getItem("token");
+    if (!token) {
+      alert("You must be logged in to update your profile.");
+      return;
+    }
     const data = new FormData();
     Object.entries(formData).forEach(([key, value]) => {
       if (value) data.append(key, value);

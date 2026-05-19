@@ -13,8 +13,10 @@ import {
   Bike,
   Menu,
   X,
+  ShieldCheck,
 } from "lucide-react";
 import "../styles/admin.css";
+import { clearUserSession, readCurrentUser } from "../utils/auth";
 
 const links = [
   { name: "Dashboard", path: "/admin/dashboard", icon: LayoutDashboard },
@@ -25,22 +27,15 @@ const links = [
   { name: "Feedbacks", path: "/admin/feedbacks", icon: MessageSquareMore },
   { name: "Blogs", path: "/admin/blogs", icon: ScrollText },
   { name: "Delivery", path: "/admin/delivery-partners", icon: Bike },
+  { name: "Enable 2FA", path: "/admin/enable-2fa", icon: ShieldCheck },
 ];
 
 export default function SidebarLayout({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const currentUser = useMemo(() => {
-    try {
-      return JSON.parse(localStorage.getItem("currentUser") || "null");
-    } catch (error) {
-      return null;
-    }
-  }, []);
+  const currentUser = useMemo(() => readCurrentUser(), []);
 
   const handleSwitchAccount = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("currentUser");
-    window.dispatchEvent(new Event("loginSuccess"));
+    clearUserSession();
     window.location.href = "/login";
   };
 
@@ -70,13 +65,13 @@ export default function SidebarLayout({ children }) {
           <div className="mb-6 flex items-start justify-between">
             <div>
               <div className="admin-badge bg-amber-400/15 text-amber-200">
-                Zesto Admin
+                ZestyCart Admin
               </div>
               <h1 className="mt-4 text-2xl font-semibold tracking-tight text-white">
-                Luxury CRM
+                Admin Panel
               </h1>
               <p className="mt-2 text-sm text-slate-300">
-                Orders, revenue aur live activity ek premium control room mein.
+                Orders, revenue aur activity ko ek jagah se manage karo.
               </p>
             </div>
             <button
@@ -112,13 +107,13 @@ export default function SidebarLayout({ children }) {
 
         <div className="mt-5 rounded-[28px] border border-amber-300/15 bg-gradient-to-br from-amber-400/15 via-rose-300/10 to-transparent p-5 text-sm text-slate-200">
           <p className="text-xs uppercase tracking-[0.3em] text-amber-200/80">
-            Premium Ops
+            Quick Access
           </p>
           <h2 className="mt-3 text-lg font-semibold text-white">
-            Fast tracking
+            Admin Actions
           </h2>
           <p className="mt-2 leading-6 text-slate-300">
-            Dashboard live activity ko watch karta hai aur All Orders workspace se filters, exports aur actions handle hote hain.
+            Dashboard se latest activity dekho aur orders section se daily actions handle karo.
           </p>
           <div className="mt-5 space-y-3">
             <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">

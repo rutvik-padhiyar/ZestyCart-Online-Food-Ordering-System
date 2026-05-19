@@ -1,0 +1,73 @@
+%%{init: {'theme':'base','themeVariables': {'fontSize':'14px'}}}%%
+classDiagram
+    class User {
+        +String userId
+        +String name
+        +String email
+        +String passwordHash
+        +login()
+        +logout()
+    }
+    class Customer {
+        +String phone
+        +placeOrder()
+        +trackOrder()
+    }
+    class Admin {
+        +manageUsers()
+        +generateReports()
+    }
+    class Restaurant {
+        +String restaurantId
+        +String name
+        +String address
+        +acceptOrder()
+        +updateOrderStatus()
+    }
+    class DeliveryPartner {
+        +String deliveryId
+        +String vehicleType
+        +pickupOrder()
+        +deliverOrder()
+    }
+    class MenuItem {
+        +String itemId
+        +String title
+        +float price
+        +boolean isAvailable
+    }
+    class Cart {
+        +String cartId
+        +addItem()
+        +removeItem()
+        +getTotal()
+    }
+    class Order {
+        +String orderId
+        +Date createdAt
+        +String status
+        +float totalAmount
+        +create()
+        +cancel()
+        +markDelivered()
+    }
+    class Payment {
+        +String paymentId
+        +String method
+        +float amount
+        +String status
+        +process()
+        +refund()
+    }
+
+    User <|-- Customer
+    User <|-- Admin
+    Customer "1" --> "1" Cart : owns
+    Customer "1" --> "0..*" Order : places
+    Restaurant "1" --> "0..*" MenuItem : offers
+    Restaurant "1" --> "0..*" Order : receives
+    DeliveryPartner "1" --> "0..*" Order : delivers
+    Cart "1" --> "1..*" MenuItem : contains
+    Order "1" --> "1" Payment : has
+    Order "1" --> "1" Restaurant : for
+    Order "1" --> "1" Customer : belongs to

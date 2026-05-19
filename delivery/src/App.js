@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Navigate, Route, Routes } from "react-router-dom";
 import DeliveryLogin from "./pages/deliveryLogin";
 import DeliverySignup from "./pages/deliverySignup";
@@ -12,7 +12,31 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
+function SplashScreen() {
+  return (
+    <div className="delivery-splash-screen">
+      <div className="delivery-splash-card">
+        <img src="/zesto.png" alt="ZestyCart" className="delivery-splash-logo" />
+        <p className="delivery-auth-kicker">ZestyCart Delivery</p>
+        <h1>Rider Command Center</h1>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    document.title = "ZestyCart Delivery";
+    const timer = window.setTimeout(() => setShowSplash(false), 1400);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  if (showSplash) {
+    return <SplashScreen />;
+  }
+
   return (
     <Router>
       <Routes>

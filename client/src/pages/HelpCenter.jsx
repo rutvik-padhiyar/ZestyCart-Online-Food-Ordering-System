@@ -27,7 +27,7 @@ export default function HelpCenter() {
   }, []);
 
   const message = encodeURIComponent(
-    [`Hi, I need help with ${supportInfo.appName || "Zesto"}.`, profile?.name ? `My name is ${profile.name}.` : "", profile?.email ? `Email: ${profile.email}.` : ""]
+    [`Hi, I need help with ${supportInfo.appName || "ZestyCart"}.`, profile?.name ? `My name is ${profile.name}.` : "", profile?.email ? `Email: ${profile.email}.` : ""]
       .filter(Boolean)
       .join(" ")
   );
@@ -37,8 +37,8 @@ export default function HelpCenter() {
       <div className="public-section flex min-h-[calc(100vh-120px)] items-center justify-center pt-24">
         <div className="grid w-full max-w-5xl gap-8 lg:grid-cols-[1fr_0.95fr]">
           <section className="public-hero rounded-[36px] px-8 py-10 text-white">
-            <div className="public-pill">Priority support</div>
-            <h1 className="mt-6 text-4xl font-semibold tracking-tight lg:text-5xl">Need help? Start a premium support chat in one tap.</h1>
+            <div className="public-pill">Support</div>
+            <h1 className="mt-6 text-4xl font-semibold tracking-tight lg:text-5xl">Need help? Start a support chat in one tap.</h1>
             <div className="mt-8 space-y-4">
               <SupportNote text="Fast WhatsApp-based help flow for customers." />
               <SupportNote text="Profile information can be attached for quicker issue resolution." />
@@ -49,7 +49,7 @@ export default function HelpCenter() {
             <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
               <Headset size={34} />
             </div>
-            <h2 className="mt-6 text-3xl font-semibold text-slate-950">{supportInfo.appName || "Zesto Help"}</h2>
+            <h2 className="mt-6 text-3xl font-semibold text-slate-950">{supportInfo.appName || "ZestyCart Help"}</h2>
             <p className="mt-4 text-sm leading-7 text-slate-600">Need help? Chat with our support team on WhatsApp.</p>
             {supportInfo.phone ? (
               <a

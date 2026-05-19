@@ -83,6 +83,17 @@ const normalizeOrderFoodItems = (order) => {
     }));
 };
 
+const { login } = require("../controllers/authController");
+const { setup2FA, verify2FA } = require("../controllers/twoFactorAuthController");
+
+//
+// ================= 2FA ROUTES =================
+//
+router.post("/login", login);
+router.get("/2fa-setup", auth, roleCheck(["admin", "masteradmin"]), setup2FA);
+router.post("/2fa-verify", verify2FA);
+
+
 //
 // ================= DASHBOARD SUMMARY =================
 //

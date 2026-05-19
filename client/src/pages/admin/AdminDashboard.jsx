@@ -217,13 +217,13 @@ export default function AdminDashboard() {
             <div>
               <div className="admin-badge bg-white/10 text-amber-200">
                 <Sparkles size={14} />
-                Luxury Operations Board
+                Operations Overview
               </div>
               <h1 className="mt-4 text-3xl font-semibold tracking-tight lg:text-4xl">
-                Premium admin dashboard
+                Admin dashboard
               </h1>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
-                Sneat-style CRM structure ke saath live orders, top selling products, payment health aur revenue momentum ek hi view mein.
+                Live orders, top selling products, payment status aur revenue details ek hi view mein.
               </p>
             </div>
 
@@ -459,7 +459,7 @@ function StatCard({ icon, title, value, helper }) {
     <div className="admin-panel admin-stat-card rounded-[28px] p-5">
       <div className="flex items-center justify-between">
         <div className="rounded-2xl bg-slate-950 p-3 text-amber-300">{icon}</div>
-        <div className="admin-badge bg-emerald-500/10 text-emerald-700">Premium</div>
+        <div className="admin-badge bg-emerald-500/10 text-emerald-700">Live</div>
       </div>
       <p className="mt-5 text-sm font-medium text-slate-500">{title}</p>
       <h3 className="mt-2 text-3xl font-semibold text-slate-950">{value}</h3>

@@ -13,8 +13,8 @@ export default function BlogList() {
     <div className="public-shell">
       <div className="public-section pt-24">
         <section className="public-hero rounded-[36px] px-8 py-10 text-white">
-          <div className="public-pill">Editorial feed</div>
-          <h1 className="mt-6 text-4xl font-semibold tracking-tight lg:text-5xl">Stories, food ideas and platform updates in a richer reading experience.</h1>
+          <div className="public-pill">Blog Updates</div>
+          <h1 className="mt-6 text-4xl font-semibold tracking-tight lg:text-5xl">Read food updates, tips and platform news.</h1>
         </section>
 
         <section className="mt-8 grid gap-8 md:grid-cols-2 xl:grid-cols-3">

@@ -53,7 +53,7 @@ export default function DeliveryLogin() {
             <div className="delivery-phone-stat">Nearby order alerts</div>
           </div>
           <div className="delivery-phone-stack delivery-phone-center">
-            <div className="delivery-phone-header">Zesto Rider</div>
+            <div className="delivery-phone-header">ZestyCart Rider</div>
             <div className="delivery-phone-map">Current route ready</div>
             <div className="delivery-phone-cta">Go Online</div>
           </div>
@@ -65,7 +65,7 @@ export default function DeliveryLogin() {
         </div>
 
         <div className="delivery-auth-card">
-          <p className="delivery-auth-kicker">Zesto Delivery</p>
+          <p className="delivery-auth-kicker">ZestyCart Delivery</p>
           <h1>{step === "mobile" ? "Login with mobile OTP" : "Enter verification code"}</h1>
           <p className="delivery-auth-copy">
             Separate rider app on its own port with live orders, earnings, KYC and delivery actions.

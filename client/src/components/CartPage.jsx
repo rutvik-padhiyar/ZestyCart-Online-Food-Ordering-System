@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { resolveMediaUrl } from "../utils/media";
 
 const API_BASE = process.env["REACT_APP_BACKEND_URL"] || "http://localhost:5000";
 
@@ -67,6 +68,8 @@ export default function CartPage() {
   };
 
   const removeItem = async (itemId) => {
+    if (!token) return; // For guest users, do not attempt to call the API.
+
     try {
       await axios.delete(`${API_BASE}/api/cart/item/${itemId}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -91,7 +94,7 @@ export default function CartPage() {
       <div className="public-section pt-24">
         <section className="public-hero rounded-[36px] px-8 py-10 text-white lg:px-10">
           <div className="public-pill">Cart review</div>
-          <h1 className="mt-6 text-4xl font-semibold tracking-tight lg:text-5xl">Review your premium food selection before checkout.</h1>
+          <h1 className="mt-6 text-4xl font-semibold tracking-tight lg:text-5xl">Review your items before checkout.</h1>
         </section>
 
         {!cart?.items?.length ? (
@@ -105,9 +108,12 @@ export default function CartPage() {
                 <article key={item._id || item.product?._id} className="public-card rounded-[32px] p-5">
                   <div className="flex flex-col gap-5 md:flex-row">
                     <img
-                      src={`${API_BASE}/uploads/${item.product?.image || "placeholder-restaurant.svg"}`}
+                      src={resolveMediaUrl(item.product?.image, API_BASE)}
                       alt={item.product?.name}
                       className="h-36 w-full rounded-[24px] object-cover md:w-44"
+                      onError={(event) => {
+                        event.currentTarget.src = `${API_BASE}/uploads/placeholder-restaurant.svg`;
+                      }}
                     />
                     <div className="flex-1">
                       <div className="flex items-start justify-between gap-4">

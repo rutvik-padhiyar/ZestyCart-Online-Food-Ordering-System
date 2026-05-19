@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
+import { io } from "socket.io-client";
 
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
@@ -65,6 +66,20 @@ export default function Dashboard() {
     return () => window.clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!token) return undefined;
+    const socket = io(API_URL, { transports: ["websocket"] });
+    const handlePlatformUpdate = () => {
+      loadDashboard();
+    };
+    socket.on("platform:order-updated", handlePlatformUpdate);
+    return () => {
+      socket.off("platform:order-updated", handlePlatformUpdate);
+      socket.disconnect();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
   const updateAvailability = async (isAvailable) => {
     await axios.patch(`${API_URL}/api/delivery-auth/availability`, { isAvailable }, authConfig);
@@ -134,7 +149,7 @@ export default function Dashboard() {
     <div className="delivery-console-shell">
       <aside className="delivery-console-sidebar">
         <div>
-          <p className="delivery-auth-kicker">Zesto Rider</p>
+          <p className="delivery-auth-kicker">ZestyCart Rider</p>
           <h1>Delivery Console</h1>
           <p className="delivery-sidebar-copy">OTP login, KYC, live nearby requests, navigation and earnings in one console.</p>
         </div>

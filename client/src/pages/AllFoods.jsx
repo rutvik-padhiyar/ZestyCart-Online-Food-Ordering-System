@@ -63,7 +63,7 @@ export default function AllFoods() {
                 Menu inventory overview
               </h1>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
-                Premium admin table for all foods with price visibility, restaurant mapping aur edit-delete actions.
+                All foods, pricing, restaurant mapping aur edit-delete actions yahan available hain.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-3">

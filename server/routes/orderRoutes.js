@@ -4,8 +4,11 @@ const auth = require("../middleware/authMiddleware");
 const roleCheck = require("../middleware/roleCheck");
 const Order = require("../models/orderModel");
 const Cart = require("../models/cartModel");
+const Food = require("../models/foodModel");
 const Restaurant = require("../models/restaurantModel");
 const sendOrderEmail = require("../utils/sendOrderEmail");
+const { emitOrderEvent } = require("../utils/orderEvents");
+const { estimatePrepMinutes, calculatePriorityScore, calculateFraudRisk } = require("../utils/platformIntelligence");
 
 const parseDateInput = (value, endOfDay = false) => {
     if (!value) return null;
@@ -102,9 +105,34 @@ router.post("/place", auth, async(req, res) => {
             totalPrice: totalAmount,
             paymentMethod: req.body.paymentMethod || "COD",
             paymentStatus: req.body.paymentMethod === "Online" ? "paid" : "pending",
+            emergency: Boolean(req.body.emergency),
             address,
             mobile,
             status: "placed",
+            restaurantStatus: "new",
+            estimatedPrepMinutes: estimatePrepMinutes(foodItems),
+            priorityScore: calculatePriorityScore({
+                totalPrice: totalAmount,
+                foodItems,
+                paymentMethod: req.body.paymentMethod || "COD",
+                emergency: Boolean(req.body.emergency),
+            }),
+            aiSignals: {
+                demandPredictionScore: Math.min(100, foodItems.reduce((sum, item) => sum + Number(item.quantity || 0) * 8, 0)),
+                fraudRiskScore: calculateFraudRisk({
+                    totalPrice: totalAmount,
+                    paymentMethod: req.body.paymentMethod || "COD",
+                    address,
+                    mobile,
+                }),
+                profitPredictionScore: Math.min(100, Math.round(totalAmount * 0.22)),
+            },
+            trackingTimeline: [{
+                stage: "order_placed",
+                actor: "user",
+                note: "Order created from customer application",
+                at: new Date(),
+            }],
 
             // ⭐ SAVE LOCATION (GEOJSON POINT)
             location: {
@@ -128,19 +156,21 @@ router.post("/place", auth, async(req, res) => {
             console.error("❌ Email failed:", err.message);
         }
 
+        for (const item of cart.items) {
+            if (!item.product?._id) continue;
+            await Food.findByIdAndUpdate(item.product._id, {
+                $inc: { stockQuantity: -Number(item.quantity || 0) }
+            });
+        }
+
         // ================== CART CLEAR ==================
         await Cart.findOneAndDelete({ user: userId });
 
-        const io = req.app.get("io");
-        if (io) {
-            io.emit("newOrder", {
-                _id: newOrder._id,
-                totalPrice: newOrder.totalPrice,
-                createdAt: newOrder.createdAt,
-                paymentMethod: newOrder.paymentMethod,
-                paymentStatus: newOrder.paymentStatus,
-            });
-        }
+        emitOrderEvent(req, "order.placed", newOrder, {
+            totalPrice: newOrder.totalPrice,
+            estimatedPrepMinutes: newOrder.estimatedPrepMinutes,
+            priorityScore: newOrder.priorityScore,
+        });
 
         res.status(201).json({
             message: "✅ Order placed with live location",

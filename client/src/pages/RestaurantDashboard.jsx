@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import MonthlyChart from "../components/MonthlyChart";
+import { resolveMediaUrl } from "../utils/media";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:5000";
 
@@ -141,10 +142,12 @@ export default function RestaurantDashboard() {
               {/* Image */}
               <div className="relative rounded-xl overflow-hidden">
                 <img
-                  src={`${BACKEND_URL}/uploads/${p.image}`}
+                  src={resolveMediaUrl(p.image, BACKEND_URL)}
                   alt={p.name}
                   className="w-full h-52 object-cover"
-                  onError={(e) => (e.target.style.display = "none")}
+                  onError={(event) => {
+                    event.currentTarget.src = `${BACKEND_URL}/uploads/placeholder-restaurant.svg`;
+                  }}
                 />
                 <span className="absolute top-2 left-2 bg-white text-gray-700 text-xs px-2 py-1 rounded shadow">
                   Promoted

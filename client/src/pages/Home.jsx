@@ -1,15 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
 import { ArrowRight, LoaderCircle, MapPin, Search, Sparkles, Tag } from "lucide-react";
 import { resolveMediaUrl } from "../utils/media";
-import LuxuryEndcap from "../components/LuxuryEndcap";
 
 const API_BASE = process.env["REACT_APP_BACKEND_URL"] || "http://localhost:5000";
 const heroOffers = [
-  { title: "Flat 30% Off", subtitle: "Chef-curated premium combos after 7 PM" },
-  { title: "Luxury Dessert Drop", subtitle: "Buy 2 signature desserts, get 1 complimentary" },
-  { title: "VIP Weekend Table", subtitle: "Free delivery on high-value city favourites" },
+  { title: "Flat 30% Off", subtitle: "Save on selected combos after 7 PM" },
+  { title: "Dessert Offer", subtitle: "Buy 2 desserts and get 1 free on selected items" },
+  { title: "Weekend Delivery", subtitle: "Free delivery on selected restaurants this weekend" },
 ];
 
 export default function Home() {
@@ -22,27 +21,27 @@ export default function Home() {
   const [detectingLocation, setDetectingLocation] = useState(false);
   const [offerIndex, setOfferIndex] = useState(0);
 
-  useEffect(() => {
-    detectUserLocation();
-
-    const handleReset = () => {
-      setSearchInput("");
-      detectUserLocation();
-    };
-
-    window.addEventListener("resetHome", handleReset);
-    return () => window.removeEventListener("resetHome", handleReset);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  const fetchRestaurants = useCallback(async (lat, lng) => {
+    setLoading(true);
+    setSearchError("");
+    try {
+      let url = `${API_BASE}/api/restaurant/all`;
+      if (lat && lng) {
+        url = `${API_BASE}/api/restaurant/nearby?lat=${lat}&lng=${lng}&distance=15`;
+      }
+      const res = await axios.get(url);
+      // API se response ek object ho sakta hai (jaise { restaurants: [...] }) ya seedha array.
+      // Isliye, hum check karte hain ki data array hai ya nahi, taaki .map() error na de.
+      const restaurantData = res.data?.restaurants || res.data;
+      setRestaurants(Array.isArray(restaurantData) ? restaurantData : []);
+    } catch (error) {
+      setRestaurants([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  useEffect(() => {
-    const timer = window.setInterval(() => {
-      setOfferIndex((current) => (current + 1) % heroOffers.length);
-    }, 3200);
-    return () => window.clearInterval(timer);
-  }, []);
-
-  const detectUserLocation = () => {
+  const detectUserLocation = useCallback(() => {
     if (!navigator.geolocation) {
       fetchRestaurants(24.2586, 72.1907);
       return;
@@ -81,24 +80,26 @@ export default function Home() {
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
-  };
+  }, [fetchRestaurants]);
 
-  const fetchRestaurants = async (lat, lng) => {
-    setLoading(true);
-    setSearchError("");
-    try {
-      let url = `${API_BASE}/api/restaurant/all`;
-      if (lat && lng) {
-        url = `${API_BASE}/api/restaurant/nearby?lat=${lat}&lng=${lng}&distance=15`;
-      }
-      const res = await axios.get(url);
-      setRestaurants(res.data || []);
-    } catch (error) {
-      setRestaurants([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    detectUserLocation();
+
+    const handleReset = () => {
+      setSearchInput("");
+      detectUserLocation();
+    };
+
+    window.addEventListener("resetHome", handleReset);
+    return () => window.removeEventListener("resetHome", handleReset);
+  }, [detectUserLocation]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setOfferIndex((current) => (current + 1) % heroOffers.length);
+    }, 3200);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const handleSearch = async () => {
     const query = searchInput.trim();
@@ -140,12 +141,12 @@ export default function Home() {
         <section className="public-hero rounded-[40px] px-8 py-10 text-white lg:px-10 lg:py-12">
           <div className="grid gap-8 xl:grid-cols-[1.15fr_0.85fr] xl:items-center">
             <div>
-              <div className="public-pill">Luxury discovery</div>
+              <div className="public-pill">Restaurant Discovery</div>
               <h1 className="mt-6 text-4xl font-semibold tracking-tight lg:max-w-4xl lg:text-6xl">
-                Discover standout restaurants in <span className="text-emerald-300">{address}</span>
+                Discover restaurants in <span className="text-emerald-300">{address}</span>
               </h1>
               <p className="mt-5 max-w-2xl text-base leading-8 text-emerald-100/80">
-                Premium cards, richer visuals, rotating city offers and a more intentional ordering flow.
+                Search nearby restaurants, check offers and start your order.
               </p>
 
               <div className="mt-8 flex flex-col gap-3 md:flex-row">
@@ -230,7 +231,7 @@ export default function Home() {
                   <div className="p-6">
                     <div className="flex items-center justify-between gap-4">
                       <span className="rounded-full bg-amber-100 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-amber-700">
-                        Luxury Pick
+                        Popular
                       </span>
                       <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
                         <Sparkles size={14} />
@@ -267,8 +268,6 @@ export default function Home() {
             </div>
           )}
         </section>
-
-        <LuxuryEndcap />
       </div>
     </div>
   );

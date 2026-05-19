@@ -1,4 +1,5 @@
 const RestaurantAuth = require("../models/restaurantAuthModel");
+const Restaurant = require("../models/restaurantModel");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
@@ -32,6 +33,20 @@ exports.signup = async(req, res) => {
         });
 
         await restaurant.save();
+
+        const existingListing = await Restaurant.findOne({
+            $or: [{ email }, { name }]
+        });
+        if (!existingListing) {
+            await Restaurant.create({
+                name,
+                ownerName,
+                mobile: phone,
+                email,
+                panCardImage: "placeholder-restaurant.svg",
+                restaurantImage: "placeholder-restaurant.svg",
+            });
+        }
 
         res.status(201).json({
             message: "Restaurant registered successfully",

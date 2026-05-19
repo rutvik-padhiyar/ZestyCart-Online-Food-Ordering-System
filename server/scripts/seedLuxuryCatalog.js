@@ -138,7 +138,7 @@ async function seed() {
         name: baseName,
         ownerName: `${location.city} Hospitality Group`,
         mobile: `9${String(100000000 + cityIndex * 100 + conceptIndex).padStart(9, "0")}`,
-        email: `${slug}@zesto-luxury.com`,
+        email: `${slug}@zestycart-luxury.com`,
         city: location.city,
         state: location.state,
         address: `${conceptIndex + 11}, ${location.city} Signature Boulevard, ${location.state}`,

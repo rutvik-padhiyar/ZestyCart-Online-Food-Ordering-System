@@ -1,0 +1,37 @@
+%%{init: {'theme':'base','themeVariables': {'fontSize':'14px'}, 'flowchart': {'nodeSpacing': 55, 'rankSpacing': 70}}}%%
+flowchart LR
+    Customer[Customer]
+    Restaurant[Restaurant]
+    Delivery[Delivery Partner]
+    Admin[Admin]
+    PaymentGateway[Payment Gateway]
+
+    subgraph FoodOrderingSystem[Food Ordering System]
+        UC1((Register/Login))
+        UC2((Browse Menu))
+        UC3((Manage Cart))
+        UC4((Place Order))
+        UC5((Make Payment))
+        UC6((Track Order))
+        UC7((Accept/Reject Order))
+        UC8((Update Order Status))
+        UC9((Assign Delivery))
+        UC10((Manage Users/Restaurants))
+        UC11((View Reports))
+    end
+
+    Customer --> UC1
+    Customer --> UC2
+    Customer --> UC3
+    Customer --> UC4
+    Customer --> UC5
+    Customer --> UC6
+    Restaurant --> UC7
+    Restaurant --> UC8
+    Delivery --> UC8
+    Admin --> UC9
+    Admin --> UC10
+    Admin --> UC11
+    PaymentGateway --> UC5
+    UC4 -. includes .-> UC5
+    UC6 -. depends on .-> UC8

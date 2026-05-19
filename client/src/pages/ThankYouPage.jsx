@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import axios from "axios";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -16,32 +16,52 @@ import {
   UserRound,
 } from "lucide-react";
 import HomeFeedbackSection from "../components/HomeFeedbackSection";
+import { resolveMediaUrl } from "../utils/media";
 
 const API_BASE = process.env["REACT_APP_BACKEND_URL"] || "http://localhost:5000";
 const LOGO_SRC = "/images/zesto.png";
 
 export default function ThankYouPage() {
   const { orderId } = useParams();
-  const [order, setOrder] = useState(null);
+  const location = useLocation();
+  const [order, setOrder] = useState(location.state?.order || null);
+  const [loadingOrder, setLoadingOrder] = useState(!location.state?.order);
   const [showFeedbackPopup, setShowFeedbackPopup] = useState(false);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const invoiceRef = useRef(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchOrder = async () => {
       try {
         const token = localStorage.getItem("token");
         const res = await axios.get(`${API_BASE}/api/order/${orderId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setOrder(res.data.order);
+        if (!cancelled && res.data.order) {
+          setOrder(res.data.order);
+        }
       } catch (error) {
         console.error(error);
+      } finally {
+        if (!cancelled) {
+          setLoadingOrder(false);
+        }
       }
     };
+
     fetchOrder();
-  }, [orderId]);
+
+    if (location.state?.order) {
+      setLoadingOrder(false);
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [location.state?.order, orderId]);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowFeedbackPopup(true), 2200);
@@ -58,10 +78,7 @@ export default function ThankYouPage() {
     const itemRows = (order.foodItems || []).map((item, index) => ({
       ...item,
       total: Number(item.quantity || 0) * Number(item.price || 0),
-      image:
-        order.items?.[index]?.food?.image
-          ? `${API_BASE}/uploads/${order.items[index].food.image}`
-          : `${API_BASE}/uploads/placeholder-restaurant.svg`,
+      image: resolveMediaUrl(order.items?.[index]?.food?.image, API_BASE),
     }));
 
     return {
@@ -73,8 +90,36 @@ export default function ThankYouPage() {
     };
   }, [order]);
 
+  if ((!order || !invoiceData) && loadingOrder) {
+    return (
+      <div className="public-shell flex min-h-screen items-center justify-center text-slate-200">
+        <div className="rounded-[28px] border border-white/10 bg-white/5 px-6 py-5 text-center shadow-2xl backdrop-blur">
+          <p className="text-xs uppercase tracking-[0.3em] text-emerald-200/80">Generating Invoice</p>
+          <p className="mt-3 text-lg font-medium text-white">Payment successful. Preparing your invoice...</p>
+          <p className="mt-2 text-sm text-slate-300">Please wait while we load the order details.</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!order || !invoiceData) {
-    return <div className="public-shell flex min-h-screen items-center justify-center text-slate-200">Loading invoice...</div>;
+    return (
+      <div className="public-shell flex min-h-screen items-center justify-center text-slate-200">
+        <div className="rounded-[28px] border border-white/10 bg-white/5 px-6 py-5 text-center shadow-2xl backdrop-blur">
+          <p className="text-xs uppercase tracking-[0.3em] text-rose-200/80">Invoice Unavailable</p>
+          <p className="mt-3 text-lg font-medium text-white">We could not load this order invoice.</p>
+          <p className="mt-2 text-sm text-slate-300">Please refresh once or open My Orders to view the latest status.</p>
+          <div className="mt-5 flex flex-wrap justify-center gap-3">
+            <Link to="/my-orders" className="public-button public-button-primary">
+              My Orders
+            </Link>
+            <Link to="/checkout" className="public-button public-button-secondary">
+              Back to Checkout
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const downloadInvoice = async () => {
@@ -108,7 +153,7 @@ export default function ThankYouPage() {
         heightLeft -= pageHeight - 14;
       }
 
-      pdf.save(`zesto-invoice-${order._id}.pdf`);
+      pdf.save(`zestycart-invoice-${order._id}.pdf`);
     } catch (error) {
       console.error(error);
     } finally {
@@ -130,7 +175,7 @@ export default function ThankYouPage() {
             <div>
               <h1 className="text-4xl font-semibold tracking-tight lg:text-5xl">Thank you. Your order is confirmed.</h1>
               <p className="mt-3 text-base text-emerald-100/75">
-                Luxury invoice generated for order #{order._id.slice(-8)}.
+                Invoice generated for order #{order._id.slice(-8)}.
               </p>
             </div>
           </div>
@@ -146,13 +191,13 @@ export default function ThankYouPage() {
                 <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
                   <div className="flex items-center gap-4">
                     <div className="rounded-[24px] bg-white/10 p-3 backdrop-blur">
-                      <img src={LOGO_SRC} alt="Zesto" className="h-14 w-14 rounded-2xl object-cover" />
+                      <img src={LOGO_SRC} alt="ZestyCart" className="h-14 w-14 rounded-2xl object-cover" />
                     </div>
                     <div>
-                      <p className="text-3xl font-semibold tracking-tight">Zesto</p>
-                      <p className="mt-1 text-sm uppercase tracking-[0.35em] text-emerald-200/80">Luxury Fooding</p>
+                      <p className="text-3xl font-semibold tracking-tight">ZestyCart</p>
+                      <p className="mt-1 text-sm uppercase tracking-[0.35em] text-emerald-200/80">Food Ordering</p>
                       <p className="mt-3 max-w-md text-sm leading-7 text-slate-300">
-                        Premium dining delivery invoice with branded experience, full order detail and color-rich export.
+                        Order invoice with customer, restaurant and payment details.
                       </p>
                     </div>
                   </div>
@@ -170,7 +215,7 @@ export default function ThankYouPage() {
                   icon={<Store size={18} />}
                   title="Restaurant"
                   lines={[
-                    order.restaurant?.name || "Zesto Partner Kitchen",
+                    order.restaurant?.name || "ZestyCart Partner Kitchen",
                     `Status: ${order.status || "placed"}`,
                     `Payment: ${order.paymentMethod || "COD"} / ${order.paymentStatus || "pending"}`,
                   ]}
@@ -224,7 +269,7 @@ export default function ThankYouPage() {
                                 <div>
                                   <p className="text-base font-semibold text-slate-950">{item.name}</p>
                                   <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-400">
-                                    Signature menu
+                                    Menu item
                                   </p>
                                 </div>
                               </div>
@@ -293,7 +338,7 @@ export default function ThankYouPage() {
                   className="public-button public-button-primary"
                 >
                   <Download size={16} />
-                  {downloading ? "Preparing PDF..." : "Download VIP PDF"}
+                  {downloading ? "Preparing PDF..." : "Download PDF"}
                 </button>
                 <button
                   type="button"

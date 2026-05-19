@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect } from "react";
+import axios from "axios";
 import { BrowserRouter as Router, Route, Routes, useLocation } from "react-router-dom";
 import "./styles/public.css";
 import Navbar from "./components/Navbar";
@@ -39,16 +40,71 @@ import CheckoutPage from "./pages/Checkout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminDeliveryPartners from "./pages/admin/AdminDeliveryPartners";
+import Admin2FAVerify from "./pages/admin/Admin2FAVerify";
+import Enable2FA from "./pages/admin/Enable2FA";
 import AppErrorBoundary from "./components/AppErrorBoundary";
+import { getStoredToken, setStoredUser, validateStoredToken } from "./utils/auth";
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:5000";
 
 function AppContent() {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith("/admin");
 
+  useEffect(() => {
+    const validateSession = async () => {
+      const decoded = validateStoredToken();
+      if (!decoded) {
+        return;
+      }
+
+      const token = getStoredToken();
+      if (!token) {
+        return;
+      }
+
+      try {
+        const response = await axios.get(`${BACKEND_URL}/api/user/profile`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setStoredUser(response.data);
+      } catch (error) {
+        // Global axios interceptor clears invalid sessions automatically.
+      }
+    };
+
+    validateSession();
+
+    const handleWindowFocus = () => {
+      if (document.visibilityState === "hidden") {
+        return;
+      }
+      validateSession();
+    };
+
+    const handlePageShow = (event) => {
+      if (event.persisted) {
+        validateSession();
+      }
+    };
+
+    window.addEventListener("focus", handleWindowFocus);
+    document.addEventListener("visibilitychange", handleWindowFocus);
+    window.addEventListener("pageshow", handlePageShow);
+    window.addEventListener("storage", handleWindowFocus);
+
+    return () => {
+      window.removeEventListener("focus", handleWindowFocus);
+      document.removeEventListener("visibilitychange", handleWindowFocus);
+      window.removeEventListener("pageshow", handlePageShow);
+      window.removeEventListener("storage", handleWindowFocus);
+    };
+  }, []);
+
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="app-shell">
       {!isAdminRoute && <Navbar />}
-      <div className={isAdminRoute ? "min-h-screen" : "flex-grow pt-16"}>
+      <div className={isAdminRoute ? "app-main app-main-admin" : "app-main"}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/nearby-restaurants" element={<Home />} />
@@ -73,6 +129,8 @@ function AppContent() {
           <Route path="/blogs/:slug" element={<BlogDetail />} />
           <Route path="/checkout" element={<CheckoutPage />} />
 
+          <Route path="/admin/verify-2fa" element={<Admin2FAVerify />} />
+          <Route path="/admin/enable-2fa" element={<Enable2FA />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/orders" element={<AdminOrders />} />
           <Route path="/admin/feedbacks" element={<AdminFeedbacks />} />

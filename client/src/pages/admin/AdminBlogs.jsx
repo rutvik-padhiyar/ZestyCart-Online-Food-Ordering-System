@@ -45,10 +45,10 @@ export default function AdminBlogs() {
             <div>
               <div className="admin-badge bg-white/10 text-amber-200">Content Studio</div>
               <h1 className="mt-4 text-3xl font-semibold tracking-tight lg:text-4xl">
-                Manage blogs in premium view
+                Manage blogs
               </h1>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">
-                Content publishing aur admin actions ko same luxury shell ke andar shift kiya gaya hai.
+                Create, update and remove blog posts from one place.
               </p>
             </div>
             <button

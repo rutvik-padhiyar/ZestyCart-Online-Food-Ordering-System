@@ -51,11 +51,11 @@ export default function RestaurantPage() {
         <section className="public-hero rounded-[36px] px-8 py-10 text-white lg:px-10">
           <div className="public-pill">
             <Sparkles size={14} />
-            Signature menu
+            Restaurant Menu
           </div>
-          <h1 className="mt-6 text-4xl font-semibold tracking-tight lg:text-5xl">Explore premium dishes from this restaurant.</h1>
+          <h1 className="mt-6 text-4xl font-semibold tracking-tight lg:text-5xl">Explore dishes from this restaurant.</h1>
           <p className="mt-4 max-w-3xl text-base leading-8 text-emerald-100/80">
-            Curated food cards, clear pricing aur instant cart actions.
+            View menu items, prices and add them to your cart.
           </p>
         </section>
 
@@ -92,7 +92,7 @@ export default function RestaurantPage() {
                   </div>
                 </div>
 
-                <p className="mt-4 text-sm leading-7 text-slate-600">{food.description || "Freshly prepared item from our featured menu."}</p>
+                <p className="mt-4 text-sm leading-7 text-slate-600">{food.description || "Freshly prepared item from this menu."}</p>
 
                 <button type="button" onClick={() => handleAddToCart(food._id)} className="public-button public-button-primary mt-6 w-full text-sm">
                   <ShoppingBag size={16} />

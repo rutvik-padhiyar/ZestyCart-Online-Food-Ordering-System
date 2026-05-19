@@ -71,6 +71,16 @@ const userSchema = new mongoose.Schema({
         type: Date,
         default: Date.now,
     },
+
+    twoFactorSecret: {
+        type: String,
+        default: null,
+    },
+
+    twoFactorEnabled: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 // ✅ Location index for Geo queries

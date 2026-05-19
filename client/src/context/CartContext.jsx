@@ -1,19 +1,20 @@
 // 📁 src/context/CartContext.jsx
-import React, { createContext, useState, useEffect } from "react";
+import React, { createContext, useState, useEffect, useCallback } from "react";
 import axios from "axios";
 
 
 export const CartContext = createContext();
+const API_BASE = process.env["REACT_APP_BACKEND_URL"] || "http://localhost:5000";
 
 export const CartProvider = ({ children }) => {
   const [cartCount, setCartCount] = useState(0);
 
-  const fetchCartCount = async () => {
+  const fetchCartCount = useCallback(async () => {
     const token = localStorage.getItem("token");
 
     if (token) {
       try {
-        const res = await axios.get(`${process.env["REACT_APP_BACKEND_URL"] || "http://localhost:5000"}/api/cart`, {
+        const res = await axios.get(`${API_BASE}/api/cart`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         // ✅ agar cart nahi hai to empty array handle karo
@@ -31,7 +32,7 @@ export const CartProvider = ({ children }) => {
       const guestCart = JSON.parse(localStorage.getItem("guestCart")) || [];
       setCartCount(guestCart.length);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchCartCount();
@@ -43,7 +44,7 @@ export const CartProvider = ({ children }) => {
     return () => {
       window.removeEventListener("cartUpdated", handleCartUpdate);
     };
-  }, []);
+  }, [fetchCartCount]);
 
   return (
     <CartContext.Provider value={{ cartCount, setCartCount, fetchCartCount }}>

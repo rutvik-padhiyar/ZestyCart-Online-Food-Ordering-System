@@ -6,12 +6,16 @@ import axios from "axios";
 const UserFeedbackReplies = () => {
   const [feedbacks, setFeedbacks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const token = localStorage.getItem("token");
 
   const emojiMap = { 1: "😡", 2: "😕", 3: "😐", 4: "🙂", 5: "😍" };
 
   useEffect(() => {
     const fetchUserFeedbacks = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setLoading(false);
+        return;
+      }
       try {
         const { data } = await axios.get(`${process.env["REACT_APP_BACKEND_URL"] || "http://localhost:5000"}/api/feedback/user`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -24,7 +28,7 @@ const UserFeedbackReplies = () => {
       }
     };
     fetchUserFeedbacks();
-  }, [token]);
+  }, []);
 
   if (loading) return <p>Loading your feedbacks...</p>;
   if (feedbacks.length === 0) return <p>You have not submitted any feedback yet.</p>;
