@@ -82,18 +82,17 @@ export default function Home() {
     );
   }, [fetchRestaurants]);
 
-  useEffect(() => {
-    detectUserLocation();
+useEffect(() => {
+  fetchRestaurants();
 
-    const handleReset = () => {
-      setSearchInput("");
-      detectUserLocation();
-    };
+  const handleReset = () => {
+    setSearchInput("");
+    fetchRestaurants();
+  };
 
-    window.addEventListener("resetHome", handleReset);
-    return () => window.removeEventListener("resetHome", handleReset);
-  }, [detectUserLocation]);
-
+  window.addEventListener("resetHome", handleReset);
+  return () => window.removeEventListener("resetHome", handleReset);
+}, [fetchRestaurants]);
   useEffect(() => {
     const timer = window.setInterval(() => {
       setOfferIndex((current) => (current + 1) % heroOffers.length);
